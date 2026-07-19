@@ -1,7 +1,13 @@
 import hou
+import os
 from .server import HoudiniMCPServer
 
-def start_server(host='127.0.0.1', port=9876):
+DEFAULT_PORT = int(os.environ.get("HOUDINI_MCP_PORT", "9900"))
+
+
+def start_server(host='127.0.0.1', port=None):
+    port = DEFAULT_PORT if port is None else int(port)
+    print(f"HoudiniMCP: starting Shelf Server on {host}:{port}")
     existing = getattr(hou.session, "houdinimcp_server", None)
     if existing is not None and existing.running:
         print(f"HoudiniMCP Server is already running on {existing.host}:{existing.port}")
@@ -27,7 +33,7 @@ def is_server_running():
     existing = getattr(hou.session, "houdinimcp_server", None)
     return existing is not None and existing.running
 
-def restart_server(host='127.0.0.1', port=9876):
+def restart_server(host='127.0.0.1', port=None):
     stop_server()
     start_server(host=host, port=port)
 

@@ -2,7 +2,7 @@
 
 **HoudiniMCP** allows you to control **SideFX Houdini** from **Claude** using the **Model Context Protocol (MCP)**. It consists of:
 
-1. A **Houdini plugin** (Python package) that listens on a local port (default `localhost:9876`) and handles commands (creating and modifying nodes, executing code, etc.).  
+1. A **Houdini plugin** (Python package) that listens on a local port (default `localhost:9900`, configurable with `HOUDINI_MCP_PORT`) and handles commands (creating and modifying nodes, executing code, etc.).
 2. An **MCP bridge script** you run via **uv** (or system Python) that communicates via **std**in/**std**out with Claude and **TCP** with Houdini.
 
 ## Hybrid tool catalog
@@ -90,7 +90,7 @@ C:/Users/YourUserName/Documents/houdini19.5/scripts/python/houdinimcp/
 Inside **`houdinimcp/`**, place:
 
 - **`__init__.py`** – handles plugin initialization (start/stop server)  
-- **`server.py`** – defines the `HoudiniMCPServer` (listening on port `9876`)  
+- **`server.py`** – defines the `HoudiniMCPServer` (listening on port `9900` by default)
 - **`houdini_mcp_server.py`** – optional bridging script (some prefer a separate location)
 - **`pyproject.toml`**
 
@@ -122,7 +122,7 @@ Label: "MCP"
        hou.ui.displayMessage("Houdini MCP Server stopped")
    else:
        houdinimcp.start_server()
-       hou.ui.displayMessage("Houdini MCP Server started on localhost:9876")
+       hou.ui.displayMessage("Houdini MCP Server started on localhost:9900")
 
 ```
 

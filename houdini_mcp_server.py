@@ -4,7 +4,7 @@ houdini_mcp_server.py
 
 This is the "bridge" or "driver" script that Claude will run via `uv run`.
 It uses the MCP library (fastmcp) to communicate with Claude over stdio,
-and relays each command to the local Houdini plugin on port 9876.
+and relays each command to the local Houdini plugin on port 9900 by default.
 """
 import sys
 import os
@@ -556,7 +556,8 @@ class HoudiniConnection:
 
 # A global Houdini connection object
 _houdini_connection: HoudiniConnection = None
-_houdini_port: int = 9876  # Default port; override with --port
+DEFAULT_HOUDINI_PORT = int(os.environ.get("HOUDINI_MCP_PORT", "9900"))
+_houdini_port: int = DEFAULT_HOUDINI_PORT  # Override with --port
 
 def get_houdini_connection() -> HoudiniConnection:
     """Get or create a persistent HoudiniConnection object."""
@@ -607,7 +608,7 @@ async def server_lifespan(app: FastMCP):
     #     logger.info("Successfully connected to Houdini on startup.")
     # except Exception as e:
     #     logger.warning(f"Could not connect to Houdini on startup: {e}")
-    #     logger.warning("Make sure Houdini is running with the plugin on port 9876.")
+    #     logger.warning("Make sure Houdini is running with the plugin on the configured port.")
     yield {} # Context is empty for now
     logger.info("Houdini MCP server shutting down.")
     global _houdini_connection
@@ -1241,8 +1242,8 @@ def main():
     global _houdini_port
 
     parser = argparse.ArgumentParser(description='Houdini MCP Server Bridge')
-    parser.add_argument('--port', type=int, default=9876,
-                        help='Port to connect to Houdini (default: 9876)')
+    parser.add_argument('--port', type=int, default=DEFAULT_HOUDINI_PORT,
+                        help=f'Port to connect to Houdini (default: {DEFAULT_HOUDINI_PORT}; env: HOUDINI_MCP_PORT)')
     args = parser.parse_args()
     _houdini_port = args.port
     logger.info(f"Configured to connect to Houdini on port {_houdini_port}")

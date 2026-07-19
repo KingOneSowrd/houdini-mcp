@@ -61,7 +61,7 @@ class HoudiniOperationError(RuntimeError):
         self.details = details
 
 class HoudiniMCPServer:
-    def __init__(self, host='127.0.0.1', port=9876):
+    def __init__(self, host='127.0.0.1', port=9900):
         self.host = host
         self.port = port
         self.running = False
@@ -97,7 +97,9 @@ class HoudiniMCPServer:
             self.running = True
             print(f"HoudiniMCP server started on {self.host}:{self.port}")
         except Exception as e:
-            print(f"Failed to start server: {str(e)}")
+            print(f"Failed to start server on {self.host}:{self.port}: {str(e)}")
+            if getattr(e, "winerror", None) == 10013:
+                print("Windows denied the bind. Check `netsh interface ipv4 show excludedportrange protocol=tcp` or set HOUDINI_MCP_PORT to an allowed port.")
             self.stop()
             
     def stop(self):

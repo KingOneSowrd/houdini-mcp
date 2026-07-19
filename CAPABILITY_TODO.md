@@ -105,7 +105,7 @@ MCP 不追求把每个 Houdini HOM 方法包装成一个 Tool。模型应通过�
 - [ ] 高风险脚本写入需要 `allow_unsafe=true`；删除和覆盖还需目标身份及 Revision 确认
 - [ ] Registry 单元测试覆盖 Schema、风险、可用性和 DocRef
 - [ ] 涉及 `hou` 的能力有 headless 集成测试；GUI 能力另有 GUI 会话验证
-- [ ] 不改变 Shelf、TCP `127.0.0.1:9876`、长度前缀 JSON、stdio、`uv run` 和部署方式
+- [ ] 不改变 Shelf、长度前缀 JSON、stdio、`uv run` 和部署方式；TCP 默认端口因 Windows 保留范围冲突调整为 `127.0.0.1:9900`，并允许通过 `HOUDINI_MCP_PORT` 配置
 
 Git commit、文档和发布要求属于能力组的交付流程，不作为每个小 Tool 的重复清单。
 

@@ -13,7 +13,7 @@ Keep the existing two-process design:
 1. `houdini_mcp_server.py` is the FastMCP bridge. It runs outside Houdini,
    exposes MCP tools over stdio, validates requests, and relays commands over
    TCP.
-2. `server.py` runs inside Houdini, listens on `127.0.0.1:9876`, dispatches JSON
+2. `server.py` runs inside Houdini, listens on `127.0.0.1:9900` by default, dispatches JSON
    commands on Houdini's main thread, and performs the actual `hou` operations.
 3. `houdini_catalog.py` declares typed catalog capabilities and their metadata.
 4. `tool_registry.py` owns discovery, schema generation, availability checks,
@@ -34,7 +34,7 @@ Do not change these without an explicit user request:
 - The `uv run` MCP launch workflow.
 - MCP stdio transport.
 - The Shelf Tool start/stop workflow.
-- The default Houdini TCP endpoint, `127.0.0.1:9876`.
+- The default Houdini TCP endpoint, `127.0.0.1:9900` (configurable with `HOUDINI_MCP_PORT`).
 - The length-prefixed JSON TCP protocol and existing command names.
 - Existing Codex, Claude Desktop, or Houdini package registration procedures.
 
