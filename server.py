@@ -327,6 +327,7 @@ class HoudiniMCPServer:
         return {
             "version": hou.applicationVersionString(),
             "platform": platform_info or sys.platform,
+            "ui_available": bool(hou.isUIAvailable()),
             "hfs": hfs,
             "hh": hh,
             "help_root": help_root,
@@ -587,7 +588,11 @@ class HoudiniMCPServer:
                 f"Destination already exists: {target}. Pass overwrite=true to replace it."
             )
         existed = os.path.exists(target)
-        hou.hipFile.save(file_name=target, save_to_recent_files=True)
+        # HOM accepts forward slashes on every platform.  Using them also
+        # prevents third-party hipFile callbacks from interpreting ``\U`` in
+        # a Windows path as a Python unicode escape.
+        houdini_target = target.replace("\\", "/")
+        hou.hipFile.save(file_name=houdini_target, save_to_recent_files=True)
         return {
             "path": hou.hipFile.path(),
             "previous_path": previous_path,

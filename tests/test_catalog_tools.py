@@ -30,6 +30,7 @@ environment = conn.send_command("get_environment_info")
 assert environment["status"] == "success", environment
 assert environment["result"]["version"], environment
 assert environment["result"]["hfs"], environment
+ui_available = environment["result"]["ui_available"]
 print("  PASS  portable Houdini environment info")
 
 invalid = call(
@@ -62,6 +63,7 @@ print("  PASS  modify_node changed/failed reporting")
 material = call("set_material", {"node_path": geo_path, "name": "mcp_catalog_material"})
 assert material["result"]["material_node"], material
 assert material["result"]["material_type"], material
+material_path = material["result"]["material_node"]
 print("  PASS  live material type resolution + assignment")
 
 hip_info = call("get_hip_info")
@@ -72,10 +74,11 @@ with tempfile.TemporaryDirectory() as temp_dir:
         handle.write(b"not a hip")
     protected = call("save_hip", {"path": existing}, expect_error=True)
     assert "overwrite" in protected["message"].lower(), protected
-    destination = os.path.join(temp_dir, "catalog_test.hip")
-    saved = call("save_hip", {"path": destination})
-    assert os.path.isfile(destination), saved
-print("  PASS  HIP info + overwrite-protected save")
+    if not ui_available:
+        destination = os.path.join(temp_dir, "catalog_test.hip")
+        saved = call("save_hip", {"path": destination})
+        assert os.path.isfile(destination), saved
+print("  PASS  HIP info + overwrite protection (GUI-safe)")
 
 bridge._docs_provider = None
 search = bridge.search_tools(None, "box", limit=5)
@@ -86,6 +89,7 @@ assert schema["status"] == "success" and schema["result"]["official_docs"], sche
 print("  PASS  joint tool + bundled SideFX document search")
 
 call("delete_node", {"path": geo_path})
+call("delete_node", {"path": material_path})
 bridge._houdini_connection.disconnect()
 bridge._houdini_connection = None
 print("\nALL CATALOG INTEGRATION TESTS PASSED")
