@@ -5,6 +5,51 @@
 1. A **Houdini plugin** (Python package) that listens on a local port (default `localhost:9876`) and handles commands (creating and modifying nodes, executing code, etc.).  
 2. An **MCP bridge script** you run via **uv** (or system Python) that communicates via **std**in/**std**out with Claude and **TCP** with Houdini.
 
+## Hybrid tool catalog
+
+HoudiniMCP uses a compact, documented tool surface by default. Frequently used
+operations remain direct MCP tools, while the complete capability set is
+available through a typed catalog:
+
+- `search_tools` searches executable capabilities together with the official
+  HOM and node help bundled with the active Houdini installation.
+- `get_tool_schema` returns validated arguments, risk/undo metadata, examples,
+  and traceable SideFX documentation references.
+- `call_tool` validates dynamic arguments before relaying a catalog command to
+  Houdini.
+
+The default `hybrid` mode exposes eight direct Houdini tools plus these three
+catalog tools. Existing clients can restore the original expanded surface by
+setting `HOUDINI_MCP_TOOL_MODE=legacy` in the MCP server environment. The
+installation command, stdio transport, TCP port, shelf tools, and Houdini
+package layout are identical in both modes.
+
+### SideFX documentation binding
+
+Catalog metadata is grounded in the official documentation installed with the
+currently connected Houdini version. The bridge asks Houdini for its runtime
+version and `$HFS`/`$HH`, then reads `hom.zip` and `nodes.zip` directly without
+extracting or copying them. It also returns canonical `sidefx.com` links for
+human reference.
+
+Discovery is portable and never assumes a drive letter or username. The order
+is: optional `HOUDINI_MCP_DOC_ROOT`, connected Houdini, inherited `$HFS`/`$HH`,
+then platform installation discovery. If local help is unavailable, tools
+continue working with `docs_status: degraded`; the MCP server never requires a
+runtime web request.
+
+Example catalog workflow:
+
+```text
+search_tools(query="material")
+get_tool_schema(name="set_material")
+call_tool(name="set_material", arguments={"node_path": "/obj/geo1"})
+```
+
+`execute_houdini_code` remains available as a high-risk last resort. Calling it
+through `call_tool` requires `allow_unsafe=true`; prefer documented dedicated
+tools because they validate inputs and preserve Houdini undo behavior.
+
 Below are the complete instructions for setting up Houdini, uv, and Claude Desktop.
 
 ---
