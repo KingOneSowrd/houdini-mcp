@@ -214,5 +214,7 @@ class ToolRegistry:
                 "origin": "tool_registry",
             }
         if isinstance(result, dict) and result.get("status") in {"success", "error"}:
+            if result.get("status") == "error":
+                result.setdefault("official_docs", [doc.as_dict() for doc in spec.docs])
             return result
         return {"status": "success", "result": result}

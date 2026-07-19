@@ -226,6 +226,9 @@ class HoudiniMCPServer:
             "modify_node": self.modify_node,
             "delete_node": self.delete_node,
             "get_node_info": self.get_node_info,
+            "find_nodes": self.find_nodes,
+            "get_hip_info": self.get_hip_info,
+            "save_hip": self.save_hip,
             "execute_code": self.execute_code,
             "set_material": self.set_material,
             "get_asset_lib_status": self.get_asset_lib_status,
@@ -367,6 +370,19 @@ class HoudiniMCPServer:
             parent = hou.node(parent_path)
             if not parent:
                 raise ValueError(f"Parent path not found: {parent_path}")
+
+            child_category = getattr(parent, "childTypeCategory", lambda: None)()
+            if child_category is not None:
+                available = child_category.nodeTypes()
+                if node_type not in available:
+                    suggestions = difflib.get_close_matches(
+                        node_type, sorted(available), n=8, cutoff=0.35
+                    )
+                    raise ValueError(
+                        f"Invalid node type '{node_type}' for {parent_path}. "
+                        f"This network accepts category '{child_category.name()}'. "
+                        f"Closest available types: {suggestions}"
+                    )
             
             node = parent.createNode(node_type, node_name=name)
             if position and len(position) >= 2:
@@ -393,25 +409,31 @@ class HoudiniMCPServer:
             raise ValueError(f"Node not found: {path}")
         
         changes = []
+        failed = []
         old_name = node.name()
         
         if name and name != old_name:
             node.setName(name)
-            changes.append(f"Renamed from {old_name} to {name}")
+            changes.append({"field": "name", "previous": old_name, "value": node.name()})
         
         if position and len(position) >= 2:
+            old_position = list(node.position())
             node.setPosition([position[0], position[1]])
-            changes.append(f"Position set to {position}")
+            changes.append({"field": "position", "previous": old_position, "value": list(node.position())})
         
         if parameters:
             for p_name, p_val in parameters.items():
-                parm = node.parm(p_name)
-                if parm:
-                    old_val = parm.eval()
-                    parm.set(p_val)
-                    changes.append(f"Parameter {p_name} changed from {old_val} to {p_val}")
+                try:
+                    old_val, new_val = self._set_one_parm(node, p_name, p_val)
+                    changes.append({
+                        "field": f"parameter:{p_name}",
+                        "previous": old_val,
+                        "value": new_val,
+                    })
+                except Exception as exc:
+                    failed.append({"field": f"parameter:{p_name}", "error": str(exc)})
         
-        return {"path": node.path(), "changes": changes}
+        return {"path": node.path(), "changed": changes, "failed": failed}
 
     def delete_node(self, path):
         """Deletes a node from the scene."""
@@ -476,6 +498,77 @@ class HoudiniMCPServer:
             })
 
         return node_info
+
+    def find_nodes(self, root_path="/obj", name_pattern=None, type_pattern=None,
+                   recursive=True, offset=0, limit=100):
+        """Find nodes using live Houdini names and types, with pagination."""
+        root = self._resolve_node(root_path)
+        nodes = list(root.allSubChildren()) if recursive else list(root.children())
+        matched = []
+        for node in nodes:
+            type_name = node.type().name()
+            if name_pattern and not fnmatch.fnmatchcase(node.name(), name_pattern):
+                continue
+            if type_pattern and not fnmatch.fnmatchcase(type_name, type_pattern):
+                continue
+            matched.append(node)
+        matched.sort(key=lambda node: node.path())
+        offset = max(0, int(offset))
+        limit = max(1, min(int(limit), 500))
+        page = matched[offset:offset + limit]
+        return {
+            "root": root.path(),
+            "total": len(matched),
+            "offset": offset,
+            "count": len(page),
+            "nodes": [
+                {
+                    "name": node.name(),
+                    "path": node.path(),
+                    "type": node.type().name(),
+                    "category": node.type().category().name(),
+                }
+                for node in page
+            ],
+        }
+
+    def get_hip_info(self):
+        """Return current HIP identity and unsaved state."""
+        is_new = bool(getattr(hou.hipFile, "isNewFile", lambda: False)())
+        has_unsaved = bool(getattr(hou.hipFile, "hasUnsavedChanges", lambda: False)())
+        return {
+            "path": hou.hipFile.path(),
+            "name": hou.hipFile.basename(),
+            "is_new_file": is_new,
+            "has_unsaved_changes": has_unsaved,
+        }
+
+    def save_hip(self, path=None, overwrite=False):
+        """Save the HIP file, protecting unrelated existing targets by default."""
+        previous_path = os.path.abspath(hou.hipFile.path())
+        is_new = bool(getattr(hou.hipFile, "isNewFile", lambda: False)())
+        if path:
+            expanded = hou.expandString(path)
+            target = os.path.abspath(os.path.expanduser(expanded))
+        else:
+            if is_new:
+                raise ValueError("A path is required when saving a new untitled HIP file")
+            target = previous_path
+        parent = os.path.dirname(target)
+        if not parent or not os.path.isdir(parent):
+            raise ValueError(f"Destination directory does not exist: {parent}")
+        same_file = os.path.normcase(target) == os.path.normcase(previous_path)
+        if os.path.exists(target) and not same_file and not overwrite:
+            raise FileExistsError(
+                f"Destination already exists: {target}. Pass overwrite=true to replace it."
+            )
+        existed = os.path.exists(target)
+        hou.hipFile.save(file_name=target, save_to_recent_files=True)
+        return {
+            "path": hou.hipFile.path(),
+            "previous_path": previous_path,
+            "overwritten": bool(existed),
+        }
 
     def execute_code(self, code):
         """Executes arbitrary Python code within Houdini."""
@@ -973,7 +1066,7 @@ class HoudiniMCPServer:
     # -------------------------------------------------------------------------
     # set_material (now completed)
     # -------------------------------------------------------------------------
-    def set_material(self, node_path, material_type="principledshader", name=None, parameters=None):
+    def set_material(self, node_path, material_type=None, name=None, parameters=None):
         """
         Creates or applies a material to an OBJ node. 
         For example, we can create a Principled Shader in /mat 
@@ -997,6 +1090,42 @@ class HoudiniMCPServer:
                 mat_context = hou.node("/shop")
                 if not mat_context:
                     raise RuntimeError("No /mat or /shop context found to create materials.")
+
+            available_types = mat_context.childTypeCategory().nodeTypes()
+            requested_type = material_type
+            if requested_type not in available_types:
+                if requested_type:
+                    compatible = [
+                        type_name for type_name in available_types
+                        if type_name.split("::", 1)[0] == requested_type
+                    ]
+                    if compatible:
+                        material_type = sorted(compatible, key=lambda value: value.count("::"))[-1]
+                    else:
+                        suggestions = difflib.get_close_matches(
+                            requested_type, sorted(available_types), n=8, cutoff=0.3
+                        )
+                        raise ValueError(
+                            f"Material type '{requested_type}' is unavailable in {mat_context.path()}. "
+                            f"Closest registered types: {suggestions}"
+                        )
+                else:
+                    principled = [
+                        type_name for type_name in available_types
+                        if "principledshader" in type_name.lower()
+                    ]
+                    if principled:
+                        material_type = sorted(principled, key=lambda value: value.count("::"))[-1]
+                    else:
+                        standard_surface = [
+                            type_name for type_name in available_types
+                            if "standard_surface" in type_name.lower()
+                        ]
+                        if not standard_surface:
+                            raise RuntimeError(
+                                "No Principled Shader or MaterialX Standard Surface type is registered"
+                            )
+                        material_type = sorted(standard_surface)[0]
 
             mat_name = name or (f"{material_type}_auto")
             mat_node = mat_context.node(mat_name)
@@ -1050,12 +1179,13 @@ class HoudiniMCPServer:
             return {
                 "status": "ok",
                 "material_node": mat_node.path(),
+                "material_type": mat_node.type().name(),
                 "applied_to": target_node.path(),
             }
 
         except Exception as e:
             traceback.print_exc()
-            return {"status": "error", "message": str(e), "node": node_path}
+            raise RuntimeError(f"Failed to assign material to {node_path}: {e}")
 
     # -------------------------------------------------------------------------
     # NEW OPUS Import Handler and Helpers
