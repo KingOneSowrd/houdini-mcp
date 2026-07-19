@@ -221,6 +221,7 @@ class HoudiniMCPServer:
         # Always-available handlers
         handlers = {
             "get_scene_info": self.get_scene_info,
+            "get_environment_info": self.get_environment_info,
             "create_node": self.create_node,
             "modify_node": self.modify_node,
             "delete_node": self.delete_node,
@@ -289,6 +290,25 @@ class HoudiniMCPServer:
 
     def _handle_ping(self):
         return {"pong": True, "protocol": 1}
+
+    def get_environment_info(self):
+        """Return runtime facts used for portable documentation discovery."""
+        hfs = hou.getenv("HFS")
+        hh = hou.getenv("HH")
+        help_root = os.path.join(hh, "help") if hh else None
+        platform_info = getattr(hou, "applicationPlatformInfo", lambda: None)()
+        return {
+            "version": hou.applicationVersionString(),
+            "platform": platform_info or sys.platform,
+            "hfs": hfs,
+            "hh": hh,
+            "help_root": help_root,
+            "help_available": bool(
+                help_root
+                and os.path.isfile(os.path.join(help_root, "hom.zip"))
+                and os.path.isfile(os.path.join(help_root, "nodes.zip"))
+            ),
+        }
 
     # -------------------------------------------------------------------------
     # Basic Info & Node Operations

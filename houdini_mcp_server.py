@@ -19,10 +19,13 @@ import socket
 import struct
 import logging
 from dataclasses import dataclass
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP, Context
 import asyncio
+
+from houdini_catalog import build_registry
+from sidefx_docs import SideFXDocsProvider
 
 # --- OPUS Imports and Setup ---
 import requests
@@ -571,6 +574,22 @@ mcp = FastMCP(
     description="A bridging server that connects Claude to Houdini via MCP stdio + TCP, with OPUS API integration."
 )
 
+TOOL_MODE = os.getenv("HOUDINI_MCP_TOOL_MODE", "hybrid").strip().lower()
+if TOOL_MODE not in {"hybrid", "legacy"}:
+    logger.warning("Unknown HOUDINI_MCP_TOOL_MODE=%r; using hybrid", TOOL_MODE)
+    TOOL_MODE = "hybrid"
+
+
+def legacy_tool():
+    """Register a legacy-only FastMCP tool while keeping the Python function callable."""
+    if TOOL_MODE == "legacy":
+        return mcp.tool()
+
+    def decorator(function):
+        return function
+
+    return decorator
+
 @asynccontextmanager
 async def server_lifespan(app: FastMCP):
     """Startup/shutdown logic. Called automatically by fastmcp."""
@@ -721,13 +740,13 @@ def connect_nodes(ctx: Context, from_path: str, to_path: str,
     })
 
 
-@mcp.tool()
+@legacy_tool()
 def disconnect_node_input(ctx: Context, path: str, input_index: int = 0) -> dict:
     """Disconnect one input of a node (reports what it was connected to)."""
     return _houdini_call("disconnect_input", {"path": path, "input_index": input_index})
 
 
-@mcp.tool()
+@legacy_tool()
 def delete_node(ctx: Context, path: str) -> dict:
     """Delete a node from the scene by path."""
     return _houdini_call("delete_node", {"path": path})
@@ -762,7 +781,7 @@ def get_parameter_schema(ctx: Context, path: str, pattern: str = None,
     return _houdini_call("get_parameter_schema", params)
 
 
-@mcp.tool()
+@legacy_tool()
 def set_node_flags(ctx: Context, path: str, display: bool = None,
                    render: bool = None, bypass: bool = None,
                    template: bool = None) -> dict:
@@ -776,13 +795,13 @@ def set_node_flags(ctx: Context, path: str, display: bool = None,
     })
 
 
-@mcp.tool()
+@legacy_tool()
 def layout_network(ctx: Context, path: str) -> dict:
     """Auto-layout all children of a network node for a tidy graph."""
     return _houdini_call("layout_children", {"path": path})
 
 
-@mcp.tool()
+@legacy_tool()
 def find_error_nodes(ctx: Context, root_path: str = "/obj",
                      include_warnings: bool = False) -> dict:
     """
@@ -796,7 +815,7 @@ def find_error_nodes(ctx: Context, root_path: str = "/obj",
     })
 
 
-@mcp.tool()
+@legacy_tool()
 def cook_node(ctx: Context, path: str) -> dict:
     """
     Force-cook a node and report whether it cooked cleanly, with errors,
@@ -805,7 +824,7 @@ def cook_node(ctx: Context, path: str) -> dict:
     return _houdini_call("cook_node", {"path": path})
 
 
-@mcp.tool()
+@legacy_tool()
 def create_wrangle(ctx: Context, parent_path: str, vex_code: str,
                    name: str = None, run_over: str = "points",
                    input_node: str = None) -> dict:
@@ -825,7 +844,7 @@ def create_wrangle(ctx: Context, parent_path: str, vex_code: str,
     return _houdini_call("create_wrangle", params)
 
 
-@mcp.tool()
+@legacy_tool()
 def set_wrangle_code(ctx: Context, path: str, vex_code: str,
                      validate: bool = True) -> dict:
     """
@@ -849,7 +868,7 @@ def get_geometry_info(ctx: Context, path: str) -> dict:
     return _houdini_call("get_geometry_info", {"path": path})
 
 
-@mcp.tool()
+@legacy_tool()
 def get_geometry_data(ctx: Context, path: str, element: str = "points",
                       attributes: List[str] = None, start: int = 0,
                       limit: int = 100) -> dict:
@@ -868,7 +887,7 @@ def get_geometry_data(ctx: Context, path: str, element: str = "points",
 # -------------------------------------------------------------------
 # NEW rendering Tools
 # -------------------------------------------------------------------
-@mcp.tool()
+@legacy_tool()
 def render_single_view(ctx: Context,
                        orthographic: bool = False,
                        rotation: List[float] = [0, 90, 0],
@@ -897,7 +916,7 @@ def render_single_view(ctx: Context,
         logger.error(f"render_single_view failed: {e}", exc_info=True)
         return f"Render failed: {str(e)}"
 
-@mcp.tool()
+@legacy_tool()
 def render_quad_views(ctx: Context,
                       render_path: str = "C:/temp/",
                       render_engine: str = "opengl",
@@ -922,7 +941,7 @@ def render_quad_views(ctx: Context,
         logger.error(f"render_quad_views failed: {e}", exc_info=True)
         return f"Render failed: {str(e)}"
 
-@mcp.tool()
+@legacy_tool()
 def render_specific_camera(ctx: Context,
                            camera_path: str,
                            render_path: str = "C:/temp/",
@@ -953,7 +972,7 @@ def render_specific_camera(ctx: Context,
 # NEW OPUS API Tools
 # -------------------------------------------------------------------
 
-@mcp.tool()
+@legacy_tool()
 def opus_get_model_names(ctx: Context) -> List[str]:
     """
     Returns a list of available OPUS component/structure names.
@@ -961,7 +980,7 @@ def opus_get_model_names(ctx: Context) -> List[str]:
     # Currently uses the hardcoded list from helpers
     return get_all_component_names()
 
-@mcp.tool()
+@legacy_tool()
 def opus_get_model_params_schema(ctx: Context, structure: str) -> dict:
     """
     Retrieves the parameter schema or format instructions for a given OPUS model structure.
@@ -973,7 +992,7 @@ def opus_get_model_params_schema(ctx: Context, structure: str) -> dict:
     # This function now returns a dict with statusCode and result/error
     return get_formatted_opus_params(structure)
 
-@mcp.tool()
+@legacy_tool()
 def opus_create_model(ctx: Context, structure: str, parameters: Dict[str, Any], count: int = 1) -> dict:
     """
     Starts a batch job to create one or more 3D models using the OPUS API.
@@ -990,7 +1009,7 @@ def opus_create_model(ctx: Context, structure: str, parameters: Dict[str, Any], 
     # This function handles API call and returns dict with statusCode and batch_id/error
     return create_opus_component(structure, parameters, count)
 
-@mcp.tool()
+@legacy_tool()
 def opus_variate_model(ctx: Context, result_id: str, count: int = 12) -> dict:
     """
     Starts a batch job to create variations of an existing OPUS model result.
@@ -1009,7 +1028,7 @@ def opus_variate_model(ctx: Context, result_id: str, count: int = 12) -> dict:
 # NEW Tools Forwarding to Houdini for OPUS Job Handling
 # -------------------------------------------------------------------
 
-@mcp.tool()
+@legacy_tool()
 def opus_check_job_status(ctx: Context, batch_id: str) -> dict:
     """
     Checks the status of an OPUS batch job directly via the API.
@@ -1023,7 +1042,7 @@ def opus_check_job_status(ctx: Context, batch_id: str) -> dict:
     result = get_opus_job_result(batch_job_id=batch_id)
     return result # Return the dictionary (contains result or error)
 
-@mcp.tool()
+@legacy_tool()
 def opus_import_model_url(ctx: Context, download_url: str, node_name: str = None) -> str:
     """
     Asks Houdini to download a model (zip containing USD) from a URL and import it into the scene.
@@ -1104,6 +1123,101 @@ def get_opus_job_result(batch_job_id: str) -> dict:
         logger.error(f"Failed to decode job status RapidAPI response: {str(e)}")
         return {"error": "Failed to decode job status RapidAPI response."}
 # --- End get_opus_job_result helper ---
+
+
+# -------------------------------------------------------------------
+# Hybrid tool catalog and compact MCP surface
+# -------------------------------------------------------------------
+
+def _opus_availability() -> tuple[bool, Optional[str]]:
+    if RAPIDAPI_HOST_URL and RAPIDAPI_HOST and RAPIDAPI_KEY:
+        return True, None
+    return False, "OPUS requires RAPIDAPI_HOST_URL, RAPIDAPI_HOST and RAPIDAPI_KEY in urls.env"
+
+
+def _local_opus_handlers() -> Dict[str, Any]:
+    return {
+        "opus_get_model_names": lambda args: opus_get_model_names(None),
+        "opus_get_model_params_schema": lambda args: opus_get_model_params_schema(None, **args),
+        "opus_create_model": lambda args: opus_create_model(None, **args),
+        "opus_variate_model": lambda args: opus_variate_model(None, **args),
+        "opus_check_job_status": lambda args: opus_check_job_status(None, **args),
+        "opus_import_model_url": lambda args: opus_import_model_url(None, **args),
+    }
+
+
+tool_registry = build_registry(
+    relay=lambda command, params: _houdini_call(command, params),
+    local_handlers=_local_opus_handlers(),
+    opus_availability=_opus_availability,
+)
+
+_docs_provider: Optional[SideFXDocsProvider] = None
+
+
+def _get_docs_provider() -> SideFXDocsProvider:
+    global _docs_provider
+    if _docs_provider is not None:
+        return _docs_provider
+
+    houdini_info: Dict[str, Any] = {}
+    response = _houdini_call("get_environment_info")
+    if response.get("status") == "success":
+        houdini_info = response.get("result", {})
+    _docs_provider = SideFXDocsProvider(houdini_info=houdini_info)
+    return _docs_provider
+
+
+@mcp.tool()
+def houdini_ping(ctx: Context) -> dict:
+    """Test the Houdini bridge and report protocol, catalog, and tool mode."""
+    response = _houdini_call("ping")
+    if response.get("status") == "success":
+        response["result"].update({
+            "tool_mode": TOOL_MODE,
+            "catalog_tools": len(tool_registry.names()),
+        })
+    return response
+
+
+@mcp.tool()
+def search_tools(ctx: Context, query: str = "", category: str = None,
+                 mutating: bool = None, limit: int = 10) -> dict:
+    """Search executable Houdini tools and bundled SideFX documentation."""
+    provider = _get_docs_provider()
+    return {
+        "query": query,
+        "houdini_version": provider.houdini_version,
+        "docs_status": provider.status,
+        "tools": tool_registry.search(
+            query=query,
+            category=category,
+            mutating=mutating,
+            limit=limit,
+            houdini_version=provider.houdini_version,
+        ),
+        "official_docs": provider.search(query, limit=limit),
+    }
+
+
+@mcp.tool()
+def get_tool_schema(ctx: Context, name: str) -> dict:
+    """Return the validated input schema, risk, examples and SideFX references for a catalog tool."""
+    spec = tool_registry.get(name)
+    if spec is None:
+        return {"status": "error", "message": f"Unknown catalog tool: {name}", "origin": "tool_registry"}
+    provider = _get_docs_provider()
+    result = spec.schema(provider.houdini_version)
+    result["official_docs"] = provider.resolve_refs(spec.docs)
+    result["docs_status"] = provider.status
+    return {"status": "success", "result": result}
+
+
+@mcp.tool()
+def call_tool(ctx: Context, name: str, arguments: Dict[str, Any] = None,
+              allow_unsafe: bool = False) -> dict:
+    """Validate and invoke one documented catalog tool by name."""
+    return tool_registry.invoke(name, arguments or {}, allow_unsafe=allow_unsafe)
 
 
 # ... (rest of existing code, main function etc) ...

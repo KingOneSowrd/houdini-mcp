@@ -206,7 +206,7 @@ class ToolRegistry:
                 "details": exc.errors(include_url=False),
             }
         try:
-            result = spec.invoke(validated.model_dump(exclude_none=True))
+            result = spec.invoke(validated.model_dump(exclude_none=True, by_alias=True))
         except Exception as exc:
             return {
                 "status": "error",
