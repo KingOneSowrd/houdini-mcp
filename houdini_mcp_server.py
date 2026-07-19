@@ -16,9 +16,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 import json
 import socket
+import threading
 import struct
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP, Context
@@ -416,6 +417,7 @@ class HoudiniConnection:
     port: int
     sock: socket.socket = None
     protocol_verified: bool = False
+    io_lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
 
     def connect(self) -> bool:
         """Connect to the Houdini plugin (which is listening on self.host:self.port)."""
@@ -448,6 +450,11 @@ class HoudiniConnection:
         self.protocol_verified = False
 
     def send_command(self, cmd_type: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Serialize framed request/response pairs on the shared TCP socket."""
+        with self.io_lock:
+            return self._send_command_unlocked(cmd_type, params)
+
+    def _send_command_unlocked(self, cmd_type: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Send a JSON command to Houdini's server and wait for the JSON response.
         
@@ -659,7 +666,7 @@ def create_node(ctx: Context, node_type: str, parent_path: str = "/obj", name: s
         return f"Server Error creating node: {str(e)}"
 
 @mcp.tool()
-def execute_houdini_code(ctx: Context, code: str) -> str:
+def execute_houdini_code(ctx: Context, code: str, allow_unsafe: bool = False) -> str:
     """
     Execute arbitrary Python code in Houdini's environment. LAST RESORT:
     prefer the dedicated tools (connect_nodes, set_parameters, create_wrangle,
@@ -667,6 +674,8 @@ def execute_houdini_code(ctx: Context, code: str) -> str:
     and are undoable as a single step. Use this only for operations no
     dedicated tool covers. Returns status and any stdout/stderr.
     """
+    if not allow_unsafe:
+        return "Error (risk_policy): arbitrary Houdini Python requires allow_unsafe=true"
     try:
         conn = get_houdini_connection()
         response = conn.send_command("execute_code", {"code": code})
@@ -1182,7 +1191,8 @@ def houdini_ping(ctx: Context) -> dict:
 
 @mcp.tool()
 def search_tools(ctx: Context, query: str = "", category: str = None,
-                 mutating: bool = None, limit: int = 10) -> dict:
+                 mutating: bool = None, risk: str = None, available: bool = None,
+                 offset: int = 0, limit: int = 10) -> dict:
     """Search executable Houdini tools and bundled SideFX documentation."""
     provider = _get_docs_provider()
     return {
@@ -1193,6 +1203,9 @@ def search_tools(ctx: Context, query: str = "", category: str = None,
             query=query,
             category=category,
             mutating=mutating,
+            risk=risk,
+            available=available,
+            offset=offset,
             limit=limit,
             houdini_version=provider.houdini_version,
         ),

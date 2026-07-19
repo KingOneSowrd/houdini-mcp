@@ -131,15 +131,23 @@ class ToolRegistry:
         query: str = "",
         category: Optional[str] = None,
         mutating: Optional[bool] = None,
+        risk: Optional[RiskLevel] = None,
+        available: Optional[bool] = None,
+        offset: int = 0,
         limit: int = 10,
         houdini_version: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        needle = query.strip().lower()
+        words = [word for word in query.strip().lower().split() if word]
         ranked: List[tuple[int, str, ToolSpec]] = []
         for spec in self._tools.values():
             if category and spec.category.lower() != category.lower():
                 continue
             if mutating is not None and spec.mutating != mutating:
+                continue
+            if risk is not None and spec.risk != risk:
+                continue
+            spec_available, _ = spec.availability_status()
+            if available is not None and spec_available != available:
                 continue
 
             name = spec.name.lower()
@@ -147,9 +155,10 @@ class ToolRegistry:
             description = spec.description.lower()
             category_text = spec.category.lower()
             haystack = " ".join((name, keywords, description, category_text))
-            if needle and needle not in haystack:
+            if words and not all(word in haystack for word in words):
                 continue
-            if not needle:
+            needle = " ".join(words)
+            if not words:
                 score = 0
             elif name == needle:
                 score = 100
@@ -165,7 +174,8 @@ class ToolRegistry:
 
         ranked.sort(key=lambda item: (-item[0], item[1]))
         capped = max(1, min(int(limit), 50))
-        return [spec.summary(houdini_version) for _, _, spec in ranked[:capped]]
+        start = max(0, int(offset))
+        return [spec.summary(houdini_version) for _, _, spec in ranked[start:start + capped]]
 
     def invoke(
         self,

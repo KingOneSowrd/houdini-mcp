@@ -2,6 +2,7 @@ import unittest
 from typing import Optional
 
 from tool_registry import DocRef, ToolArguments, ToolRegistry, ToolSpec
+from houdini_catalog import build_registry as build_houdini_registry
 
 
 class EchoArguments(ToolArguments):
@@ -57,6 +58,11 @@ class ToolRegistryTests(unittest.TestCase):
         self.assertIn("value", schema["input_schema"]["properties"])
         self.assertEqual(schema["official_docs"][0]["houdini_version"], "21.0.440")
 
+    def test_search_supports_multiple_words_and_pagination(self):
+        registry = build_registry()
+        self.assertEqual(registry.search("node inspect", offset=0, limit=1)[0]["name"], "node_echo")
+        self.assertEqual(registry.search("node inspect", offset=1, limit=1), [])
+
     def test_validation_rejects_extra_fields(self):
         result = build_registry().invoke("node_echo", {"value": 1, "typo": True})
         self.assertEqual(result["status"], "error")
@@ -86,6 +92,31 @@ class ToolRegistryTests(unittest.TestCase):
         summary = registry.search()[0]
         self.assertFalse(summary["available"])
         self.assertEqual(summary["unavailable_reason"], "not configured")
+
+    def test_expansion_catalog_is_strict_and_catalog_only(self):
+        registry = build_houdini_registry(lambda command, args: {"status": "success", "result": args})
+        expected = {
+            "search_node_types", "get_node_type_schema", "get_network_snapshot",
+            "analyze_hda_candidate", "search_hda_definitions", "get_hda_info",
+            "create_hda_from_subnetwork", "validate_hda", "apply_graph_patch",
+        }
+        self.assertTrue(expected.issubset(set(registry.names())))
+        invalid = registry.invoke("get_network_snapshot", {"path": "/obj", "unknown": True})
+        self.assertEqual(invalid["origin"], "validation")
+        overwrite = registry.invoke(
+            "create_hda_from_subnetwork",
+            {"path": "/obj/subnet1", "type_name": "demo::asset::1.0", "label": "Demo", "library_path": "demo.hda", "overwrite": True},
+            allow_unsafe=True,
+        )
+        self.assertEqual(overwrite["origin"], "validation")
+
+    def test_hda_disk_write_requires_unsafe_opt_in(self):
+        registry = build_houdini_registry(lambda command, args: {"status": "success", "result": args})
+        denied = registry.invoke(
+            "create_hda_from_subnetwork",
+            {"path": "/obj/subnet1", "type_name": "demo::asset::1.0", "label": "Demo", "library_path": "demo.hda"},
+        )
+        self.assertEqual(denied["origin"], "risk_policy")
 
 
 if __name__ == "__main__":

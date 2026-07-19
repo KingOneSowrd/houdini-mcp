@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import unittest
+import inspect
 
 from houdini_catalog import build_registry
 
@@ -94,6 +95,10 @@ class HybridSurfaceTests(unittest.TestCase):
         )
         self.assertEqual(allowed["status"], "success")
         self.assertEqual(calls[-1][0], "execute_code")
+
+    def test_direct_python_escape_hatch_requires_explicit_opt_in(self):
+        parameter = inspect.signature(__import__("houdini_mcp_server").execute_houdini_code).parameters["allow_unsafe"]
+        self.assertIs(parameter.default, False)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Literal
 
 from pydantic import Field
 
@@ -63,6 +63,104 @@ class DisconnectArgs(ToolArguments):
 class SetParametersArgs(ToolArguments):
     path: str
     parameters: Dict[str, Any]
+    overwrite_channel: bool = False
+
+
+class SearchNodeTypesArgs(ToolArguments):
+    parent_path: str = "/obj"
+    query: str = ""
+    category: Optional[str] = None
+    offset: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+class NodeTypeSchemaArgs(ToolArguments):
+    parent_path: str
+    node_type: str
+    pattern: Optional[str] = None
+    offset: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+class NetworkSnapshotArgs(ToolArguments):
+    path: str
+    depth: int = Field(default=1, ge=0, le=5)
+    include_parameters: bool = False
+    max_nodes: int = Field(default=200, ge=1, le=2000)
+    max_parameters: int = Field(default=20, ge=0, le=100)
+    max_bytes: int = Field(default=262144, ge=4096, le=2097152)
+
+
+class HdaCandidateArgs(ToolArguments):
+    path: str
+    library_path: Optional[str] = None
+    type_name: Optional[str] = None
+
+
+class SearchHdaArgs(ToolArguments):
+    query: str = ""
+    parent_path: Optional[str] = None
+    offset: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+class HdaInfoArgs(ToolArguments):
+    path: Optional[str] = None
+    definition_id: Optional[str] = None
+    offset: int = Field(default=0, ge=0)
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+class HdaPromotion(ToolArguments):
+    source_node: str
+    source_parameter: str
+    name: str
+    label: Optional[str] = None
+    folder: Optional[str] = None
+
+
+class CreateHdaArgs(ToolArguments):
+    path: str
+    type_name: str
+    label: str
+    library_path: str
+    description: Optional[str] = None
+    promotions: List[HdaPromotion] = Field(default_factory=list, max_length=100)
+    dry_run: bool = True
+    plan_id: Optional[str] = None
+    expected_revision: Optional[str] = None
+    idempotency_key: Optional[str] = Field(default=None, min_length=1, max_length=128)
+    overwrite: Literal[False] = False
+
+
+class ValidateHdaArgs(ToolArguments):
+    path: Optional[str] = None
+    definition_id: Optional[str] = None
+
+
+class GraphOperation(ToolArguments):
+    op: Literal["create", "delete", "connect", "disconnect", "set_parameters", "set_flags", "rename", "set_position"]
+    id: Optional[str] = None
+    path: Optional[str] = None
+    parent_path: Optional[str] = None
+    node_type: Optional[str] = None
+    name: Optional[str] = None
+    from_path: Optional[str] = None
+    to_path: Optional[str] = None
+    input_index: int = Field(default=0, ge=0)
+    output_index: int = Field(default=0, ge=0)
+    parameters: Optional[Dict[str, Any]] = None
+    flags: Optional[Dict[str, bool]] = None
+    position: Optional[List[float]] = None
+    overwrite_channel: bool = False
+
+
+class GraphPatchArgs(ToolArguments):
+    operations: List[GraphOperation] = Field(min_length=1, max_length=100)
+    dry_run: bool = True
+    atomic: bool = True
+    expected_revision: Optional[str] = None
+    idempotency_key: Optional[str] = Field(default=None, min_length=1, max_length=128)
 
 
 class ParameterSchemaArgs(ToolArguments):
@@ -211,6 +309,9 @@ def build_registry(
         ToolSpec("disconnect_node_input", "graph", "Disconnect one node input.", DisconnectArgs, remote("disconnect_input"), [hom("hou/OpNode.txt", "hou.OpNode.setInput")], ("disconnect", "wire"), True, True, "medium"),
         ToolSpec("delete_node", "node", "Delete a node by path.", NodePathArgs, remote("delete_node"), [hom("hou/OpNode.txt", "hou.OpNode.destroy")], ("delete", "remove"), True, True, "medium"),
         ToolSpec("set_parameters", "parameter", "Set validated scalar, tuple, or menu parameters in one undo group.", SetParametersArgs, remote("set_parameters"), [hom("hou/Parm.txt", "hou.Parm.set"), hom("hou/ParmTuple.txt", "hou.ParmTuple.set")], ("parameter", "parm", "menu", "value"), True, True, "medium"),
+        ToolSpec("search_node_types", "discovery", "Search node types that are live and creatable in a parent network.", SearchNodeTypesArgs, remote("search_node_types"), [hom("hou/NodeTypeCategory.txt", "hou.NodeTypeCategory.nodeTypes")], ("node", "type", "discover", "category")),
+        ToolSpec("get_node_type_schema", "discovery", "Inspect a live node type's inputs, outputs and parameter templates.", NodeTypeSchemaArgs, remote("get_node_type_schema"), [hom("hou/NodeType.txt", "hou.NodeType"), hom("hou/ParmTemplate.txt", "hou.ParmTemplate")], ("node", "type", "schema", "parameters")),
+        ToolSpec("get_network_snapshot", "discovery", "Read a bounded, revisioned snapshot of a Houdini network.", NetworkSnapshotArgs, remote("get_network_snapshot"), [hom("hou/OpNode.txt", "hou.OpNode")], ("network", "snapshot", "revision", "connections")),
         ToolSpec("get_parameter_schema", "parameter", "Discover live parameter names, types, ranges, defaults and menus.", ParameterSchemaArgs, remote("get_parameter_schema"), [hom("hou/ParmTemplate.txt", "hou.ParmTemplate")], ("parameter", "schema", "discover", "menu")),
         ToolSpec("set_node_flags", "node", "Set display, render, bypass, and template flags.", NodeFlagsArgs, remote("set_node_flags"), [hom("hou/OpNode.txt", "hou.OpNode flags")], ("display", "render", "bypass", "template"), True, True, "medium"),
         ToolSpec("layout_network", "graph", "Auto-layout the children of a network.", NodePathArgs, remote("layout_children"), [hom("hou/OpNode.txt", "hou.OpNode.layoutChildren")], ("layout", "network", "tidy"), True, True, "low"),
@@ -229,6 +330,12 @@ def build_registry(
         ToolSpec("find_nodes", "node", "Find nodes by root, name glob and live node type.", FindNodesArgs, remote("find_nodes"), [hom("hou/OpNode.txt", "hou.OpNode.allSubChildren")], ("find", "search", "node", "type")),
         ToolSpec("get_hip_info", "scene_file", "Inspect the current HIP file path and unsaved state.", NoArgs, remote("get_hip_info"), [hom("hou/hipFile.txt", "hou.hipFile")], ("hip", "file", "unsaved")),
         ToolSpec("save_hip", "scene_file", "Save the current HIP file with overwrite protection.", SaveHipArgs, remote("save_hip"), [hom("hou/hipFile.txt", "hou.hipFile.save")], ("hip", "save", "file"), True, False, "medium"),
+        ToolSpec("analyze_hda_candidate", "hda", "Analyze a subnetwork before creating an HDA definition.", HdaCandidateArgs, remote("analyze_hda_candidate"), [hom("hou/OpNode.txt", "hou.OpNode.createDigitalAsset")], ("hda", "asset", "candidate", "subnetwork")),
+        ToolSpec("search_hda_definitions", "hda", "Search installed HDA definitions with stable identities.", SearchHdaArgs, remote("search_hda_definitions"), [hom("hou/hda.txt", "hou.hda.loadedFiles")], ("hda", "definition", "library", "namespace")),
+        ToolSpec("get_hda_info", "hda", "Inspect an HDA instance or definition, including interface and revision.", HdaInfoArgs, remote("get_hda_info"), [hom("hou/HDADefinition.txt", "hou.HDADefinition")], ("hda", "definition", "interface", "sections")),
+        ToolSpec("create_hda_from_subnetwork", "hda", "Plan or transactionally create a new external HDA from a validated subnetwork.", CreateHdaArgs, remote("create_hda_from_subnetwork"), [hom("hou/OpNode.txt", "hou.OpNode.createDigitalAsset"), hom("hou/HDADefinition.txt", "hou.HDADefinition")], ("hda", "create", "promote", "library"), True, False, "high"),
+        ToolSpec("validate_hda", "hda", "Validate an HDA definition and a controlled instance cook.", ValidateHdaArgs, remote("validate_hda"), [hom("hou/HDADefinition.txt", "hou.HDADefinition"), hom("hou/OpNode.txt", "hou.OpNode.cook")], ("hda", "validate", "cook", "hash")),
+        ToolSpec("apply_graph_patch", "graph", "Validate and apply a bounded graph edit as one operation.", GraphPatchArgs, remote("apply_graph_patch"), [hom("hou/OpNode.txt", "hou.OpNode"), hom("hou/undos.txt", "hou.undos.group")], ("graph", "patch", "atomic", "batch"), True, True, "medium"),
     ]
 
     opus_specs = [

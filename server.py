@@ -14,6 +14,8 @@ import traceback
 import os
 import shutil
 import sys
+import hashlib
+import copy
 # Try PySide6 first (Houdini 21.0+), fall back to PySide2 (older versions)
 try:
     from PySide6 import QtWidgets, QtCore
@@ -52,6 +54,12 @@ EXTENSION_NAME = "Houdini MCP"
 EXTENSION_VERSION = (0, 1)
 EXTENSION_DESCRIPTION = "Connect Houdini to Claude via MCP"
 
+
+class HoudiniOperationError(RuntimeError):
+    def __init__(self, message, **details):
+        super().__init__(message)
+        self.details = details
+
 class HoudiniMCPServer:
     def __init__(self, host='127.0.0.1', port=9876):
         self.host = host
@@ -61,6 +69,8 @@ class HoudiniMCPServer:
         self.client = None
         self.buffer = b''
         self.timer = None
+        self._plans = {}
+        self._completed_operations = {}
 
     def start(self):
         """Begin listening on the given port; sets up a QTimer to poll for data."""
@@ -208,7 +218,9 @@ class HoudiniMCPServer:
         except Exception as e:
             print(f"Error executing command: {str(e)}")
             traceback.print_exc()
-            return {"status": "error", "message": str(e)}
+            response = {"status": "error", "message": str(e), "origin": "houdini"}
+            response.update(getattr(e, "details", {}))
+            return response
 
     def _execute_command_internal(self, command):
         """
@@ -238,6 +250,9 @@ class HoudiniMCPServer:
             "disconnect_input": self.disconnect_input,
             "set_parameters": self.set_parameters,
             "get_parameter_schema": self.get_parameter_schema,
+            "search_node_types": self.search_node_types,
+            "get_node_type_schema": self.get_node_type_schema,
+            "get_network_snapshot": self.get_network_snapshot,
             "set_node_flags": self.set_node_flags,
             "layout_children": self.layout_children,
             "find_error_nodes": self.find_error_nodes,
@@ -248,6 +263,12 @@ class HoudiniMCPServer:
             # Geometry introspection
             "get_geometry_info": self.get_geometry_info,
             "get_geometry_data": self.get_geometry_data,
+            "analyze_hda_candidate": self.analyze_hda_candidate,
+            "search_hda_definitions": self.search_hda_definitions,
+            "get_hda_info": self.get_hda_info,
+            "create_hda_from_subnetwork": self.create_hda_from_subnetwork,
+            "validate_hda": self.validate_hda,
+            "apply_graph_patch": self.apply_graph_patch,
             # Add new render handlers
             "render_single_view": self.handle_render_single_view,
             "render_quad_view": self.handle_render_quad_view,
@@ -266,7 +287,7 @@ class HoudiniMCPServer:
 
         handler = handlers.get(cmd_type)
         if not handler:
-            return {"status": "error", "message": f"Unknown command type: {cmd_type}"}
+            return {"status": "error", "message": f"Unknown command type: {cmd_type}", "origin": "houdini_dispatch"}
 
         print(f"Executing handler for {cmd_type}")
         with self._undo_group(cmd_type):
@@ -281,6 +302,7 @@ class HoudiniMCPServer:
         "import_opus_url", "import_asset", "connect_nodes", "disconnect_input",
         "set_parameters", "set_node_flags", "layout_children",
         "create_wrangle", "set_wrangle_code",
+        "create_hda_from_subnetwork", "apply_graph_patch",
     })
 
     @contextmanager
@@ -623,6 +645,100 @@ class HoudiniMCPServer:
         )
 
     @staticmethod
+    def _page(items, offset, limit):
+        total = len(items)
+        page = items[offset:offset + limit]
+        next_offset = offset + len(page) if offset + len(page) < total else None
+        return page, {"total": total, "offset": offset, "count": len(page), "next_offset": next_offset, "truncated": next_offset is not None}
+
+    @staticmethod
+    def _node_revision(node):
+        records = []
+        stack = [node]
+        while stack:
+            current = stack.pop()
+            records.append((current.path(), current.type().name(), tuple(current.position())))
+            for connection in current.inputConnections():
+                records.append((connection.inputNode().path(), current.path(), connection.inputIndex(), connection.outputIndex()))
+            stack.extend(reversed(list(current.children())))
+        payload = json.dumps(records, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def search_node_types(self, parent_path="/obj", query="", category=None, offset=0, limit=50):
+        parent = self._resolve_node(parent_path)
+        child_category = getattr(parent, "childTypeCategory", lambda: None)()
+        if child_category is None:
+            raise ValueError("Node does not accept children: %s" % parent_path)
+        if category and child_category.name().lower() != category.lower():
+            raise ValueError("%s accepts category '%s', not '%s'" % (parent_path, child_category.name(), category))
+        words = [word.lower() for word in query.split() if word]
+        results = []
+        for full_name, node_type in child_category.nodeTypes().items():
+            description = getattr(node_type, "description", lambda: "")() or ""
+            haystack = "%s %s" % (full_name.lower(), description.lower())
+            if words and not all(word in haystack for word in words):
+                continue
+            components = list(getattr(node_type, "nameComponents", lambda: ("", full_name, ""))())
+            results.append({
+                "name": full_name, "description": description,
+                "category": child_category.name(), "name_components": components,
+                "min_inputs": getattr(node_type, "minNumInputs", lambda: 0)(),
+                "max_inputs": getattr(node_type, "maxNumInputs", lambda: 0)(),
+            })
+        results.sort(key=lambda item: item["name"])
+        page, meta = self._page(results, offset, limit)
+        meta.update({"parent_path": parent.path(), "category": child_category.name(), "node_types": page})
+        return meta
+
+    def _template_info(self, template):
+        result = {"name": template.name(), "label": template.label(), "type": template.type().name(), "size": template.numComponents()}
+        default = getattr(template, "defaultValue", lambda: None)()
+        if default is not None:
+            result["default"] = self._jsonable(default)
+        if isinstance(template, (hou.FloatParmTemplate, hou.IntParmTemplate)):
+            result.update({"min": template.minValue(), "max": template.maxValue()})
+        items = getattr(template, "menuItems", lambda: ())()
+        if items:
+            result["menu"] = [{"token": token, "label": label} for token, label in zip(items, template.menuLabels())]
+        return result
+
+    def get_node_type_schema(self, parent_path, node_type, pattern=None, offset=0, limit=50):
+        parent = self._resolve_node(parent_path)
+        category = getattr(parent, "childTypeCategory", lambda: None)()
+        available = category.nodeTypes() if category else {}
+        if node_type not in available:
+            close = difflib.get_close_matches(node_type, sorted(available), n=8, cutoff=0.35)
+            raise ValueError("Invalid node type '%s' for %s. Closest: %s" % (node_type, parent_path, close))
+        node_type_obj = available[node_type]
+        templates = list(node_type_obj.parmTemplateGroup().entriesWithoutFolders())
+        if pattern:
+            templates = [item for item in templates if fnmatch.fnmatch(item.name().lower(), pattern.lower()) or fnmatch.fnmatch(item.label().lower(), pattern.lower())]
+        entries, meta = self._page([self._template_info(item) for item in templates], offset, limit)
+        meta.update({"name": node_type_obj.name(), "description": node_type_obj.description(), "category": category.name(), "min_inputs": node_type_obj.minNumInputs(), "max_inputs": node_type_obj.maxNumInputs(), "parameters": entries})
+        return meta
+
+    def get_network_snapshot(self, path, depth=1, include_parameters=False, max_nodes=200, max_parameters=20, max_bytes=262144):
+        root = self._resolve_node(path)
+        queue = [(root, 0)]
+        nodes = []
+        truncated = False
+        while queue and len(nodes) < max_nodes:
+            node, level = queue.pop(0)
+            entry = {"id": node.sessionId(), "path": node.path(), "name": node.name(), "type": node.type().name(), "category": node.type().category().name(), "position": list(node.position()), "inputs": [{"input_index": c.inputIndex(), "output_index": c.outputIndex(), "from": c.inputNode().path()} for c in node.inputConnections()]}
+            if include_parameters:
+                entry["parameters"] = [{"name": pt.name(), "value": self._parm_value(pt)} for pt in node.parmTuples()[:max_parameters]]
+            candidate = nodes + [entry]
+            if len(json.dumps(candidate, default=str).encode("utf-8")) > max_bytes:
+                truncated = True
+                break
+            nodes.append(entry)
+            if level < depth:
+                queue.extend((child, level + 1) for child in node.children())
+        if queue:
+            truncated = True
+        return {"root": root.path(), "nodes": nodes, "count": len(nodes), "truncated": truncated, "snapshot_revision": self._node_revision(root)}
+
+    @staticmethod
     def _jsonable(value):
         """Convert HOM values (vectors, tuples, ...) to JSON-friendly types."""
         if isinstance(value, (bool, int, float, str)) or value is None:
@@ -747,7 +863,30 @@ class HoudiniMCPServer:
 
         return previous, self._parm_value(parm_tuple)
 
-    def set_parameters(self, path, parameters):
+    def _validate_parm_value(self, node, name, value, overwrite_channel=False):
+        parm_tuple = node.parmTuple(name)
+        if parm_tuple is None:
+            candidates = [pt.name() for pt in node.parmTuples()]
+            close = difflib.get_close_matches(name, candidates, n=3, cutoff=0.5)
+            raise ValueError("Parameter '%s' not found on %s.%s" % (name, node.path(), (" Did you mean: %s?" % ", ".join(close)) if close else ""))
+        if isinstance(value, (list, tuple)) and len(value) != len(parm_tuple):
+            raise ValueError("'%s' has %s component(s), got %s values" % (name, len(parm_tuple), len(value)))
+        if not isinstance(value, (list, tuple)) and len(parm_tuple) != 1:
+            raise ValueError("'%s' has %s components; pass a list" % (name, len(parm_tuple)))
+        channels = []
+        for parm in parm_tuple:
+            expression = None
+            try:
+                expression = parm.expression() if parm.keyframes() else None
+            except hou.OperationFailed:
+                pass
+            if parm.keyframes():
+                channels.append({"parameter": parm.path(), "type": "expression" if expression else "keyframes"})
+        if channels and not overwrite_channel:
+            raise ValueError("Refusing to overwrite channel(s): %s. Retry with overwrite_channel=true." % channels)
+        return parm_tuple, channels
+
+    def set_parameters(self, path, parameters, overwrite_channel=False):
         """
         Set multiple parameters on a node in one call.
         Values: scalar for single parms, list for tuples (e.g. "t": [0, 1, 0]),
@@ -757,15 +896,15 @@ class HoudiniMCPServer:
         if not isinstance(parameters, dict) or not parameters:
             raise ValueError("'parameters' must be a non-empty dict of {name: value}")
 
-        applied, failed = [], []
+        # Validate every target before the first write, preventing partial updates.
+        validations = []
         for name, value in parameters.items():
-            try:
-                previous, new = self._set_one_parm(node, name, value)
-                applied.append({"name": name, "previous": previous, "value": new})
-            except Exception as e:
-                failed.append({"name": name, "error": str(e)})
-
-        return {"node": node.path(), "set": applied, "failed": failed}
+            validations.append((name, value, self._validate_parm_value(node, name, value, overwrite_channel)))
+        applied = []
+        for name, value, (_, channels) in validations:
+            previous, new = self._set_one_parm(node, name, value)
+            applied.append({"name": name, "previous": previous, "value": new, "overwritten_channels": channels})
+        return {"node": node.path(), "set": applied, "failed": []}
 
     def get_parameter_schema(self, path, pattern=None, offset=0, limit=50):
         """
@@ -824,6 +963,313 @@ class HoudiniMCPServer:
             "offset": offset,
             "parameters": entries,
         }
+
+    def _license_name(self):
+        category = getattr(hou, "licenseCategory", lambda: None)()
+        return getattr(category, "name", lambda: str(category))()
+
+    @staticmethod
+    def _definition_id(definition):
+        node_type = definition.nodeType()
+        library = definition.libraryFilePath() or "Embedded"
+        normalized = os.path.normcase(os.path.abspath(library)) if library != "Embedded" else library
+        return "%s|%s|%s" % (node_type.category().name(), node_type.name(), normalized)
+
+    @staticmethod
+    def _file_hash(path):
+        if not path or path == "Embedded" or not os.path.isfile(path):
+            return None
+        digest = hashlib.sha256()
+        with open(path, "rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(block)
+        return digest.hexdigest()
+
+    def _definition_revision(self, definition):
+        payload = {"id": self._definition_id(definition), "library_hash": self._file_hash(definition.libraryFilePath()), "modification_time": str(getattr(definition, "modificationTime", lambda: None)())}
+        return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+    def _all_hda_definitions(self):
+        definitions = []
+        seen = set()
+        for category in hou.nodeTypeCategories().values():
+            for node_type in category.nodeTypes().values():
+                definition = node_type.definition()
+                if definition is not None and self._definition_id(definition) not in seen:
+                    seen.add(self._definition_id(definition))
+                    definitions.append(definition)
+        return definitions
+
+    def analyze_hda_candidate(self, path, library_path=None, type_name=None):
+        node = self._resolve_node(path)
+        blockers, warnings, promotions = [], [], []
+        if not node.children():
+            blockers.append("Candidate must be a non-empty subnetwork")
+        if node.type().definition() is not None and not node.isEditableInsideLockedHDA():
+            blockers.append("Candidate is a locked HDA instance")
+        if not hasattr(node, "createDigitalAsset"):
+            blockers.append("Node does not support createDigitalAsset")
+        for child in node.allSubChildren():
+            for parm_tuple in child.parmTuples():
+                template = parm_tuple.parmTemplate()
+                if isinstance(template, (hou.FloatParmTemplate, hou.IntParmTemplate, hou.StringParmTemplate)):
+                    promotions.append({"source_node": child.path(), "source_parameter": parm_tuple.name(), "name": "%s_%s" % (child.name(), parm_tuple.name()), "label": "%s %s" % (child.name(), template.label()), "type": template.type().name(), "size": len(parm_tuple)})
+        target = os.path.abspath(os.path.expandvars(library_path)) if library_path else None
+        if target and os.path.exists(target):
+            blockers.append("Target library already exists; MVP never overwrites")
+        revision = self._node_revision(node)
+        return {"path": node.path(), "candidate_revision": revision, "license": self._license_name(), "target_library": target, "type_name": type_name, "blockers": blockers, "warnings": warnings, "promotion_candidates": promotions[:200], "promotion_candidates_truncated": len(promotions) > 200, "can_create": not blockers}
+
+    def search_hda_definitions(self, query="", parent_path=None, offset=0, limit=50):
+        words = [word.lower() for word in query.split() if word]
+        allowed_category = None
+        if parent_path:
+            parent = self._resolve_node(parent_path)
+            child_category = getattr(parent, "childTypeCategory", lambda: None)()
+            allowed_category = child_category.name() if child_category else None
+        results = []
+        for definition in self._all_hda_definitions():
+            node_type = definition.nodeType()
+            text = "%s %s %s" % (node_type.name(), node_type.description(), definition.libraryFilePath())
+            if words and not all(word in text.lower() for word in words):
+                continue
+            if allowed_category and node_type.category().name() != allowed_category:
+                continue
+            results.append({"definition_id": self._definition_id(definition), "revision_token": self._definition_revision(definition), "type_name": node_type.name(), "label": node_type.description(), "category": node_type.category().name(), "library_ref": definition.libraryFilePath() or "Embedded", "is_current": definition.isCurrent()})
+        results.sort(key=lambda item: item["definition_id"])
+        page, meta = self._page(results, offset, limit)
+        meta["definitions"] = page
+        return meta
+
+    def _resolve_definition(self, path=None, definition_id=None):
+        if path:
+            definition = self._resolve_node(path).type().definition()
+            if definition is None:
+                raise ValueError("Node is not an HDA instance: %s" % path)
+            return definition
+        if definition_id:
+            for definition in self._all_hda_definitions():
+                if self._definition_id(definition) == definition_id:
+                    return definition
+            raise ValueError("HDA definition not found: %s" % definition_id)
+        raise ValueError("Pass either path or definition_id")
+
+    def get_hda_info(self, path=None, definition_id=None, offset=0, limit=50):
+        definition = self._resolve_definition(path, definition_id)
+        node_type = definition.nodeType()
+        templates = [self._template_info(item) for item in definition.parmTemplateGroup().entriesWithoutFolders()]
+        page, meta = self._page(templates, offset, limit)
+        sections = sorted(definition.sections().keys())
+        meta.update({"definition_id": self._definition_id(definition), "revision_token": self._definition_revision(definition), "type_name": node_type.name(), "label": node_type.description(), "category": node_type.category().name(), "library_ref": definition.libraryFilePath() or "Embedded", "is_current": definition.isCurrent(), "sections": sections, "parameters": page})
+        if path:
+            node = self._resolve_node(path)
+            meta.update({"instance_path": node.path(), "matches_current_definition": node.matchesCurrentDefinition(), "locked": not node.isEditableInsideLockedHDA()})
+        return meta
+
+    def create_hda_from_subnetwork(self, path, type_name, label, library_path, description=None, promotions=None, dry_run=True, plan_id=None, expected_revision=None, idempotency_key=None, overwrite=False):
+        if overwrite:
+            raise ValueError("HDA MVP does not permit overwrite")
+        if idempotency_key and idempotency_key in self._completed_operations:
+            return self._completed_operations[idempotency_key]
+        node = self._resolve_node(path)
+        target = os.path.abspath(os.path.expandvars(library_path))
+        analysis = self.analyze_hda_candidate(path, target, type_name)
+        revision = analysis["candidate_revision"]
+        normalized_promotions = promotions or []
+        for promotion in normalized_promotions:
+            source = self._resolve_node(promotion["source_node"])
+            if not source.path().startswith(node.path() + "/"):
+                raise ValueError("Promotion source must be inside the candidate: %s" % source.path())
+            source_tuple = source.parmTuple(promotion["source_parameter"])
+            if source_tuple is None:
+                raise ValueError("Promotion source parameter not found: %s" % promotion)
+            template = source_tuple.parmTemplate()
+            if not isinstance(template, (hou.FloatParmTemplate, hou.IntParmTemplate, hou.StringParmTemplate)):
+                raise ValueError("Unsupported HDA MVP parameter template: %s" % template.type().name())
+        plan_payload = {"path": path, "type_name": type_name, "label": label, "library_path": target, "promotions": normalized_promotions, "candidate_revision": revision}
+        computed_plan_id = hashlib.sha256(json.dumps(plan_payload, sort_keys=True).encode("utf-8")).hexdigest()
+        if dry_run:
+            if analysis["blockers"]:
+                raise ValueError("HDA candidate blocked: %s" % analysis["blockers"])
+            self._plans[computed_plan_id] = plan_payload
+            return {"dry_run": True, "plan_id": computed_plan_id, "candidate_revision": revision, "target_library": target, "type_name": type_name, "changes": ["create external definition", "apply parameter interface", "bind promoted parameters", "cook and validate"]}
+        if not plan_id or plan_id != computed_plan_id or plan_id not in self._plans:
+            raise ValueError("Apply requires the matching dry-run plan_id")
+        if not expected_revision or expected_revision != revision:
+            raise ValueError("Candidate revision mismatch; current revision is %s" % revision)
+        if not idempotency_key:
+            raise ValueError("Apply requires idempotency_key")
+        if os.path.exists(target):
+            raise ValueError("Target library already exists; overwrite is forbidden: %s" % target)
+        parent_dir = os.path.dirname(target)
+        if not os.path.isdir(parent_dir) or not os.access(parent_dir, os.W_OK):
+            raise ValueError("Target directory does not exist or is not writable: %s" % parent_dir)
+        created_file = False
+        asset = None
+        original_type_name = node.type().name()
+        try:
+            asset = node.createDigitalAsset(name=type_name, hda_file_name=target, description=label, min_num_inputs=node.type().minNumInputs(), max_num_inputs=node.type().maxNumInputs())
+            created_file = os.path.isfile(target)
+            definition = asset.type().definition()
+            group = definition.parmTemplateGroup()
+            for promotion in normalized_promotions:
+                source = self._resolve_node(promotion["source_node"])
+                if not source.path().startswith(asset.path() + "/"):
+                    # Paths change when the candidate becomes an asset; resolve by relative suffix.
+                    suffix = promotion["source_node"].split(path + "/", 1)[-1]
+                    source = self._resolve_node(asset.path() + "/" + suffix)
+                source_tuple = source.parmTuple(promotion["source_parameter"])
+                if source_tuple is None:
+                    raise ValueError("Promotion source parameter not found: %s" % promotion)
+                template = copy.copy(source_tuple.parmTemplate())
+                template.setName(promotion["name"])
+                if promotion.get("label"):
+                    template.setLabel(promotion["label"])
+                group.append(template)
+            definition.setParmTemplateGroup(group)
+            for promotion in normalized_promotions:
+                suffix = promotion["source_node"].split(path + "/", 1)[-1]
+                source = self._resolve_node(asset.path() + "/" + suffix)
+                source_tuple = source.parmTuple(promotion["source_parameter"])
+                target_tuple = asset.parmTuple(promotion["name"])
+                for source_parm, target_parm in zip(source_tuple, target_tuple):
+                    source_parm.setExpression('ch("%s")' % source_parm.relativePathTo(target_parm), language=hou.exprLanguage.Hscript)
+            definition.updateFromNode(asset)
+            cook = self._cook_and_report(asset)
+            if not cook["cooked"]:
+                raise ValueError("Created HDA failed to cook: %s" % cook["errors"])
+            result = {"operation_id": str(uuid.uuid4()), "instance_path": asset.path(), "definition_id": self._definition_id(definition), "revision_token": self._definition_revision(definition), "library_ref": target, "library_sha256": self._file_hash(target), "cook": cook, "rolled_back": False, "rollback_complete": True, "residual_changes": []}
+            self._completed_operations[idempotency_key] = result
+            self._plans.pop(plan_id, None)
+            return result
+        except Exception as exc:
+            residual = []
+            try:
+                if asset is not None and hou.node(asset.path()) is not None:
+                    asset.changeNodeType(original_type_name, keep_name=True, keep_parms=True, keep_network_contents=True)
+            except Exception as rollback_exc:
+                residual.append("scene rollback: %s" % rollback_exc)
+            try:
+                if created_file and os.path.isfile(target):
+                    hou.hda.uninstallFile(target)
+                    os.remove(target)
+            except Exception as rollback_exc:
+                residual.append("library rollback: %s" % rollback_exc)
+            raise HoudiniOperationError("HDA creation failed: %s" % exc, rolled_back=True, rollback_complete=not residual, residual_changes=residual)
+
+    def validate_hda(self, path=None, definition_id=None):
+        definition = self._resolve_definition(path, definition_id)
+        node_type = definition.nodeType()
+        result = {"definition_id": self._definition_id(definition), "revision_token": self._definition_revision(definition), "library_exists": definition.libraryFilePath() == "Embedded" or os.path.isfile(definition.libraryFilePath()), "library_sha256": self._file_hash(definition.libraryFilePath()), "type_name": node_type.name()}
+        if path:
+            node = self._resolve_node(path)
+            result.update({"instance_path": node.path(), "matches_current_definition": node.matchesCurrentDefinition(), "cook": self._cook_and_report(node)})
+        return result
+
+    def apply_graph_patch(self, operations, dry_run=True, atomic=True, expected_revision=None, idempotency_key=None):
+        if idempotency_key and idempotency_key in self._completed_operations:
+            return self._completed_operations[idempotency_key]
+        if atomic:
+            for index, item in enumerate(operations):
+                op = item["op"]
+                if op in ("delete", "disconnect"):
+                    raise ValueError("Atomic MVP rejects %s because reliable compensation is unavailable" % op)
+                if op == "connect" and not (str(item.get("from_path", "")).startswith("$") and str(item.get("to_path", "")).startswith("$")):
+                    raise ValueError("Atomic operation %s may only connect nodes created in the same patch" % index)
+                if op in ("set_parameters", "set_flags", "rename", "set_position") and not str(item.get("path", "")).startswith("$"):
+                    raise ValueError("Atomic operation %s may only edit nodes created in the same patch" % index)
+        temp_ids = {}
+        roots = set()
+        validated = []
+        # Static validation of references and required fields before any mutation.
+        for index, item in enumerate(operations):
+            op = item["op"]
+            if op == "create":
+                if not item.get("parent_path") or not item.get("node_type"):
+                    raise ValueError("Operation %s create requires parent_path and node_type" % index)
+                parent = self._resolve_node(item["parent_path"])
+                category = parent.childTypeCategory()
+                if category is None or item["node_type"] not in category.nodeTypes():
+                    raise ValueError("Operation %s invalid node type '%s' for %s" % (index, item["node_type"], parent.path()))
+                if item.get("parameters"):
+                    template_names = {template.name() for template in category.nodeTypes()[item["node_type"]].parmTemplateGroup().entriesWithoutFolders()}
+                    unknown = sorted(set(item["parameters"]) - template_names)
+                    if unknown:
+                        raise ValueError("Operation %s has unknown parameters for %s: %s" % (index, item["node_type"], unknown))
+                if item.get("id"):
+                    if item["id"] in temp_ids:
+                        raise ValueError("Duplicate temporary id: %s" % item["id"])
+                    temp_ids[item["id"]] = None
+                roots.add(parent.path())
+            else:
+                references = [item.get("path"), item.get("from_path"), item.get("to_path")]
+                for reference in [ref for ref in references if ref]:
+                    if reference.startswith("$"):
+                        if reference[1:] not in temp_ids:
+                            raise ValueError("Operation %s references unknown temporary id %s" % (index, reference))
+                    else:
+                        roots.add(self._resolve_node(reference).parent().path())
+                if op in ("set_parameters", "set_flags", "rename", "set_position", "disconnect", "delete") and not item.get("path"):
+                    raise ValueError("Operation %s %s requires path" % (index, op))
+                if op == "connect" and (not item.get("from_path") or not item.get("to_path")):
+                    raise ValueError("Operation %s connect requires from_path and to_path" % index)
+            validated.append({"index": index, "op": op, "valid": True})
+        revisions = {root: self._node_revision(self._resolve_node(root)) for root in roots}
+        aggregate_revision = hashlib.sha256(json.dumps(revisions, sort_keys=True).encode("utf-8")).hexdigest()
+        if expected_revision and expected_revision != aggregate_revision:
+            raise ValueError("Graph revision mismatch; current revision is %s" % aggregate_revision)
+        if dry_run:
+            return {"dry_run": True, "operations": validated, "snapshot_revision": aggregate_revision, "roots": sorted(roots)}
+        created = []
+        results = []
+        def resolve(reference):
+            if reference and reference.startswith("$"):
+                node = temp_ids.get(reference[1:])
+                if node is None:
+                    raise ValueError("Temporary node is not available: %s" % reference)
+                return node.path()
+            return reference
+        try:
+            for index, item in enumerate(operations):
+                op = item["op"]
+                if op == "create":
+                    result = self.create_node(item["node_type"], item["parent_path"], item.get("name"), item.get("position"), item.get("parameters"))
+                    node = self._resolve_node(result["path"])
+                    created.append(node.path())
+                    if item.get("id"):
+                        temp_ids[item["id"]] = node
+                elif op == "connect":
+                    result = self.connect_nodes(resolve(item["from_path"]), resolve(item["to_path"]), item.get("input_index", 0), item.get("output_index", 0))
+                elif op == "disconnect":
+                    result = self.disconnect_input(resolve(item["path"]), item.get("input_index", 0))
+                elif op == "set_parameters":
+                    result = self.set_parameters(resolve(item["path"]), item.get("parameters") or {}, item.get("overwrite_channel", False))
+                elif op == "set_flags":
+                    result = self.set_node_flags(resolve(item["path"]), **(item.get("flags") or {}))
+                elif op == "rename":
+                    result = self.modify_node(resolve(item["path"]), name=item.get("name"))
+                elif op == "set_position":
+                    result = self.modify_node(resolve(item["path"]), position=item.get("position"))
+                elif op == "delete":
+                    result = self.delete_node(resolve(item["path"]))
+                results.append({"index": index, "op": op, "result": result})
+        except Exception as exc:
+            residual = []
+            if atomic:
+                for path in reversed(created):
+                    try:
+                        node = hou.node(path)
+                        if node:
+                            node.destroy()
+                    except Exception as rollback_exc:
+                        residual.append({"path": path, "error": str(rollback_exc)})
+            raise HoudiniOperationError("Graph patch failed at index %s: %s" % (len(results), exc), failed_index=len(results), rolled_back=atomic, rollback_complete=not residual, residual_changes=residual, partial_results=results)
+        final_revisions = {root: self._node_revision(self._resolve_node(root)) for root in roots}
+        final_revision = hashlib.sha256(json.dumps(final_revisions, sort_keys=True).encode("utf-8")).hexdigest()
+        response = {"operation_id": str(uuid.uuid4()), "operations": results, "snapshot_revision": final_revision, "rolled_back": False, "rollback_complete": True, "residual_changes": []}
+        if idempotency_key:
+            self._completed_operations[idempotency_key] = response
+        return response
 
     def set_node_flags(self, path, display=None, render=None, bypass=None, template=None):
         """Set node flags; only the flags passed (non-None) are touched."""
