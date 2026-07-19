@@ -1135,8 +1135,11 @@ class HoudiniMCPServer:
                 source_tuple = source.parmTuple(promotion["source_parameter"])
                 target_tuple = asset.parmTuple(promotion["name"])
                 for source_parm, target_parm in zip(source_tuple, target_tuple):
-                    source_parm.setExpression('ch("%s")' % source_parm.relativePathTo(target_parm), language=hou.exprLanguage.Hscript)
+                    relative_node = source.relativePathTo(asset)
+                    channel_path = "%s/%s" % (relative_node, target_parm.name())
+                    source_parm.setExpression('ch("%s")' % channel_path, language=hou.exprLanguage.Hscript)
             definition.updateFromNode(asset)
+            asset.matchCurrentDefinition()
             cook = self._cook_and_report(asset)
             if not cook["cooked"]:
                 raise ValueError("Created HDA failed to cook: %s" % cook["errors"])

@@ -36,14 +36,17 @@ grid = send("create_node", {"node_type": "grid", "parent_path": CONTAINER,
                             "name": "grid1"})
 ok("setup: container + grid created")
 
-# -- set_parameters: scalar, tuple, menu token, did-you-mean -------------------
+# -- set_parameters: validate all before writing, then scalar/tuple/menu --------
 r = send("set_parameters", {"path": grid["path"], "parameters": {
-    "size": [4, 6], "rows": 12, "cols": 7, "orient": "zx", "rws": 1}})
-assert len(r["set"]) == 4, r
-assert len(r["failed"]) == 1 and "rows" in r["failed"][0]["error"], r["failed"]
-prev_rows = [e for e in r["set"] if e["name"] == "rows"][0]
-assert prev_rows["value"] == 12, prev_rows
-ok("set_parameters: scalar+tuple+menu-token set, did-you-mean on bad name")
+    "size": [4, 6], "rows": 12, "cols": 7, "orient": "zx", "rws": 1}},
+    expect_error=True)
+assert "rows" in r["message"] and "Did you mean" in r["message"], r
+r = send("get_parameter_schema", {"path": grid["path"], "pattern": "rows"})
+assert r["parameters"][0]["value"] != 12, r
+r = send("set_parameters", {"path": grid["path"], "parameters": {
+    "size": [4, 6], "rows": 12, "cols": 7, "orient": "zx"}})
+assert len(r["set"]) == 4 and not r["failed"], r
+ok("set_parameters: atomic validation, scalar+tuple+menu-token")
 
 # menu by LABEL should also resolve
 r = send("set_parameters", {"path": grid["path"], "parameters": {"orient": "XY Plane"}})

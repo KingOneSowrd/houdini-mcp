@@ -8,7 +8,7 @@
 
 MCP 不追求把每个 Houdini HOM 方法包装成一个 Tool。模型应通过少量通用原语、实时 Schema 和经过验证的工作流配方完成大多数任务。只有模型无法可靠组合、必须跨越事务边界，或能显著减少昂贵往返的操作，才升级为专用 Catalog 能力。
 
-> 开发状态（2026-07-20）：P0 的三个 Catalog 入口、Channel 保护、HDA Candidate/Definition/创建/验证入口和受限原子 Graph Patch 已进入代码；Bridge 单元测试通过。由于本机未运行 Shelf Server 且没有可调用的 `hython`，所有依赖真实 HOM 的验收项仍保持未勾选，必须在 Houdini 重启 Shelf MCP 后完成 headless 或 GUI 会话验收，才能视为稳定发布。
+> 开发状态（2026-07-20）：P0 的三个 Catalog 入口、Channel 保护、HDA Candidate/Definition/创建/验证入口和受限原子 Graph Patch 已进入代码。Bridge 单元测试与 Houdini 21.0.440 GUI 会话集成测试均通过；真实验收覆盖 `box -> transform -> normal` 构图、Snapshot、Channel 保护、外部 HDA 创建、Vector 参数提升、内部 Channel Reference、Cook、Definition 身份、文件哈希和安全清理。尚未实现或未覆盖的高级 Interface Patch、故障注入矩阵和 P3 能力仍保持未勾选。
 
 ## 当前基线
 
