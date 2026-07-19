@@ -63,17 +63,37 @@ MCP Tool。
 
 - [ ] `apply_graph_patch`
   - 支持 `create`、`delete`、`connect`、`disconnect`、`set_parameters`
+  - 支持 `collapse_to_subnetwork` 和 `extract_subnetwork`
   - 支持请求内临时节点 ID，后续操作可引用新节点
   - 支持 `dry_run=true` 进行完整预检
   - 支持 `atomic=true`，任一步失败时不留下部分修改
   - 整组操作对应一个 Houdini Undo 步骤
   - 返回每项操作的状态、真实节点路径以及失败索引
   - 限制单次操作数量和结果大小
+- [ ] `collapse_nodes_to_subnetwork`
+  - 将同一父网络下的一组节点折叠进 Subnetwork
+  - 自动建立 Subnet Input/Output 并重连跨边界连接
+  - 返回新 Subnetwork 路径、内部节点映射和边界连接映射
+  - 空 Subnetwork 继续使用通用 `create_node`，不重复实现
+- [ ] `extract_subnetwork`
+  - 将内部节点释放回父网络并恢复外部连接
+  - 默认只接受已验证的 Subnetwork 类型
+  - 可选删除释放后的空 Subnetwork
 - [ ] `copy_nodes`
 - [ ] `move_nodes`
 - [ ] `replace_node_type`
   - 尽可能保留匹配参数和连接
   - 替换前返回不能迁移的参数与连接
+
+Subnetwork 安全约束：
+
+- [ ] 目标节点必须属于同一个父网络
+- [ ] 根据 SOP、OBJ、VOP、LOP 等实时上下文选择可用 Subnetwork 类型
+- [ ] `dry_run` 返回预计的输入、输出和连接重排，不修改场景
+- [ ] Locked HDA 内默认禁止折叠或释放
+- [ ] 操作必须原子化，失败时不留下部分移动或断开的连接
+- [ ] 保留节点名称、位置、Flags 和可迁移的网络信息
+- [ ] Subnetwork、Compile Block 和 For-Each Block 保持不同语义
 
 ### P0 验收场景
 
@@ -83,6 +103,9 @@ MCP Tool。
 - [ ] Patch 中途失败时不留下新节点
 - [ ] 一个 `Ctrl+Z` 撤销整个成功 Patch
 - [ ] 非法 SOP/OBJ/LOP 上下文返回可用类别和相近类型建议
+- [ ] 折叠带有外部输入输出的节点链后，边界连接保持一致
+- [ ] 释放 Subnetwork 后恢复原节点链，并可单步 Undo
+- [ ] Locked HDA、跨父网络节点和不兼容上下文返回保护性错误
 
 建议提交：
 
@@ -90,7 +113,8 @@ MCP Tool。
 feat: add live Houdini node type discovery
 feat: add bounded network snapshots
 feat: add atomic graph patch operations
-test: cover node discovery snapshots and graph patches
+feat: add guarded subnetwork collapse and extraction
+test: cover node discovery snapshots graph patches and subnetworks
 ```
 
 ## P1：表达式、通道与关键帧
@@ -305,6 +329,8 @@ PDG Cook 必须使用 P5 的异步任务模型，不在一次 MCP 请求中同�
 - [ ] 完成 `get_node_type_schema`
 - [ ] 完成 `get_network_snapshot`
 - [ ] 完成 `apply_graph_patch`
+- [ ] 完成 `collapse_nodes_to_subnetwork`
+- [ ] 完成 `extract_subnetwork`
 - [ ] 通过单元测试和 Houdini headless 集成测试
 
 ### Milestone B：参数不会破坏动画
