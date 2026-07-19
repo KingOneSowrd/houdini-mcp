@@ -1,9 +1,14 @@
 # Houdini MCP 能力扩展 TODO
 
-本文档记录 Houdini MCP 在现有 Hybrid Tool Registry 基础上的扩展路线。
-新增能力默认进入 Catalog，通过 `search_tools`、`get_tool_schema` 和
-`call_tool` 使用；除非经过实际使用证明是高频入口，否则不增加直接暴露的
-MCP Tool。
+本文档记录 Houdini MCP 在现有 Hybrid Tool Registry 基础上的精简扩展路线。
+
+本文档不是重构或替换现有 MCP 的设计稿。当前直连 Tool、31 项 Catalog 能力、Shelf Server、TCP Bridge、Tool Registry 和 SideFX Docs Provider 都作为既定基础继续使用；TODO 只描述在这些能力之上补齐的缺口，以及新增能力落地时必须同步完成的小幅加固。
+
+核心原则：**让 MCP 承载实时事实、严格验证、安全边界和不可拆分的副作用；让模型承载规划、组合、比较和领域工作流。**
+
+MCP 不追求把每个 Houdini HOM 方法包装成一个 Tool。模型应通过少量通用原语、实时 Schema 和经过验证的工作流配方完成大多数任务。只有模型无法可靠组合、必须跨越事务边界，或能显著减少昂贵往返的操作，才升级为专用 Catalog 能力。
+
+> 开发状态（2026-07-20）：P0 的三个 Catalog 入口、Channel 保护、HDA Candidate/Definition/创建/验证入口和受限原子 Graph Patch 已进入代码；Bridge 单元测试通过。由于本机未运行 Shelf Server 且没有可调用的 `hython`，所有依赖真实 HOM 的验收项仍保持未勾选，必须在 Houdini 重启 Shelf MCP 后完成 headless 或 GUI 会话验收，才能视为稳定发布。
 
 ## 当前基线
 
@@ -15,711 +20,477 @@ MCP Tool。
 - [x] Windows、macOS、Linux 动态 Houdini/帮助目录发现
 - [x] 节点、参数、图连接、VEX、几何、基础材质、渲染和 HIP 能力
 
+## 与现有能力的关系
+
+### 直接复用，不重复实现
+
+- `create_node`、`modify_node`、`delete_node`
+- `connect_nodes`、`disconnect_node_input`、`set_node_flags`、`layout_network`
+- `set_parameters`、`get_parameter_schema`
+- `get_node_info`、`find_nodes`、`get_scene_info`
+- `find_error_nodes`、`cook_node`
+- `create_wrangle`、`set_wrangle_code`
+- `get_geometry_info`、`get_geometry_data`
+- 现有材质、渲染、HIP、OPUS 和 SideFX 文档能力
+
+### 在现有能力上增强
+
+- `set_parameters` 增加 Channel 保护和“全部验证后再写入”
+- Registry 搜索按新增能力数量逐步增加多关键词和分页
+- 修改类命令只在 Graph Patch、HDA 等需要时增加幂等或 Revision 检查
+- 现有响应、路径和风险提示在相关能力被触及时顺手统一，不单独进行大规模重构
+
+### 真正新增的能力组
+
+- 实时节点类型发现和有界网络 Snapshot
+- HDA Core
+- 原子 Graph Patch 与可选 Subnetwork 折叠
+- USD Stage、材质绑定等无法从普通节点图获得的只读事实
+
+`apply_graph_patch` 应复用现有节点、连接、参数和 Flag 处理逻辑；它是减少往返并提供事务边界的批处理入口，不是第二套节点编辑实现。
+
+## 能力边界
+
+### MCP 应负责
+
+- 从当前 Houdini 会话读取真实节点类型、参数模板、License、GUI 和版本能力
+- 在发送 TCP 命令前使用严格 Schema 拒绝未知或错误参数
+- 对场景、磁盘、外部进程和可执行脚本实施不同的风险与回滚策略
+- 执行必须原子化或需要 Houdini 主线程保证的操作
+- 返回有大小上限、可分页、可追踪且遵守统一 Envelope 的结果
+- 为每项正式能力绑定当前 Houdini 自带的 SideFX 官方文档
+
+### 模型应负责
+
+- 根据目标规划节点网络、材质网络、LOP 网络和 HDA 工作流
+- 组合 `search_node_types`、`get_node_type_schema`、`get_network_snapshot` 和 `apply_graph_patch`
+- 比较两个有界 Snapshot，并决定需要的修复步骤
+- 根据 Tool Schema、官方文档和工作流配方选择参数与节点连接
+- 在调用专用能力前完成范围选择、风险判断和结果解释
+
+### 不应直接新增 Tool 的情况
+
+- 只是现有 `create_node`、`set_parameters` 或 `connect_nodes` 的领域重命名
+- 模型可用两三个通用调用可靠完成，且没有新的事务或安全边界
+- 依赖硬编码的完整节点类型、参数或菜单列表
+- 只能包装一次性的 HOM 调用，尚无稳定输入 Schema 和验收场景
+- 仅为减少一次目录搜索而扩大长期维护面
+
+### 专用能力晋升条件
+
+满足下列至少一项，并有实际调用记录或失败案例支持：
+
+- 通用原语无法保证原子性或无法安全回滚
+- 操作跨越场景与磁盘，必须进行备份、哈希校验或补偿回滚
+- 通用组合需要大量 TCP 往返，已经成为稳定高频工作流
+- 领域上下文无法由通用节点 Schema 表达，例如 USD Stage、HDA Definition 或 GUI Pane 状态
+
+新能力默认只进入 Catalog。只有跨领域、高频、Schema 稳定且能明显减少目录调用时，才考虑加入 Hybrid 直连表面。
+
 ## 所有新增能力的完成标准
 
-每一项能力完成前必须满足：
+每项能力完成前必须满足适用条目：
 
-- [ ] 在 `houdini_catalog.py` 中使用严格 Pydantic 参数模型
-- [ ] 注册名称、分类、说明、关键词、风险、变更标记和 Undo 信息
-- [ ] 至少绑定一项有效的 SideFX 官方 `DocRef`
-- [ ] 节点类型来自实时 `hou.nodeTypeCategories()`，不维护完整硬编码列表
-- [ ] 参数定义来自实时 `hou.ParmTemplate` / `hou.Parm` 信息
-- [ ] 成功和错误返回遵守统一 Envelope
-- [ ] 修改场景的命令按能力加入单次 Undo Group
-- [ ] 大型返回支持摘要、过滤或分页，避免撑大模型上下文
-- [ ] Houdini GUI、版本或 License 不满足时返回明确的不可用原因
-- [ ] 有 Registry 单元测试；涉及 `hou` 的能力有 headless 集成测试
-- [ ] 不改变 Shelf、TCP `9876`、stdio、`uv run` 和部署注册方式
-- [ ] 每个主要能力组通过测试后创建独立 Git commit
+- [ ] 在 `houdini_catalog.py` 中使用 `extra="forbid"` 的严格 Pydantic 参数模型
+- [ ] 注册名称、分类、说明、关键词、风险、可用性和至少一项有效 `DocRef`
+- [ ] 明确副作用范围：`read_only`、`scene`、`session_ui`、`disk`、`external_process` 或 `external_network`
+- [ ] 明确回滚方式：`none`、`undo`、`compensation`、`backup` 或 `manifest`；需要 Registry 自动门控时再扩展 `ToolSpec`
+- [ ] 涉及节点类型时从实时 `hou.nodeTypeCategories()` 和父网络上下文验证
+- [ ] 涉及参数时从实时 `hou.ParmTemplate`、`hou.ParmTuple` 和 `hou.Parm` 验证
+- [ ] 成功返回 `{"status": "success", "result": ...}`
+- [ ] 错误返回 `{"status": "error", "message": "...", "origin": "..."}`
+- [ ] 大型返回统一支持 `total`、`offset`、`count`、`next_offset` 和 `truncated`
+- [ ] GUI、版本、License 或连接状态不满足时返回明确原因，不伪装为可用
+- [ ] 场景写入加入单次 Undo Group；跨场景与磁盘操作使用补偿或备份，不宣称由 Undo 保证
+- [ ] 高风险脚本写入需要 `allow_unsafe=true`；删除和覆盖还需目标身份及 Revision 确认
+- [ ] Registry 单元测试覆盖 Schema、风险、可用性和 DocRef
+- [ ] 涉及 `hou` 的能力有 headless 集成测试；GUI 能力另有 GUI 会话验证
+- [ ] 不改变 Shelf、TCP `127.0.0.1:9876`、长度前缀 JSON、stdio、`uv run` 和部署方式
 
-## P0：通用节点发现与原子图编辑
+Git commit、文档和发布要求属于能力组的交付流程，不作为每个小 Tool 的重复清单。
 
-目标：让 Agent 在不猜测节点类型和参数的情况下构建完整节点网络，并减少
-多次 TCP 往返。
+## 扩展实施支撑项
 
-### 节点类型发现
+这些内容服务于后续能力，不作为独立的“能力拓展 P0”，也不要求先整体重构完成。只在某项新增能力实际需要时，以小步提交落地。
+
+### 响应与副作用元数据
+
+- [ ] 所有 Houdini 端异常补齐 `origin`
+- [ ] 当现有 `mutating`、`undoable` 和 `risk` 不足以描述磁盘/任务副作用时，再为 `ToolSpec` 增加 `effect_scope` 和 `rollback_strategy`
+- [ ] 高风险拒绝信息按 Tool 描述实际风险，不再只描述任意 Python
+- [ ] 区分 `available`、`unavailable` 和未连接时的 `unknown`
+- [ ] 将 Houdini 版本、License、GUI、节点类别和可选模块状态作为动态能力事实缓存
+- [ ] 缓存失效时安全降级，不阻止 Catalog 搜索
+
+### Registry 搜索可扩展性
+
+- [ ] `search_tools` 支持多关键词评分，不要求整段查询连续匹配
+- [ ] 支持分类、效果范围、变更标记、可用性和风险过滤
+- [ ] 支持分页，避免 HDA 等同类能力占满前十项
+- [ ] Tool Schema 返回前置条件、回滚策略、结果大小说明和经过验证的示例
+- [ ] 保持 Hybrid 公开表面为 8+3，除非有实际数据证明需要晋升
+
+### 重试与并发安全
+
+- [ ] Graph Patch 和 HDA 磁盘写入支持可选 `idempotency_key`
+- [ ] Houdini 端短期缓存已完成操作结果，避免 TCP 超时重试重复写入
+- [ ] 需要防止陈旧写入的操作接受 `expected_revision`
+- [ ] 返回稳定的 `operation_id` 供日志、回滚和问题诊断使用
+- [ ] 串行化共享 TCP 连接上的请求/响应，避免并发 MCP 调用错配响应
+
+### 支撑项验收
+
+- [ ] 未连接 Houdini 时 Catalog 可搜索，但会话能力标记为 `unknown`
+- [ ] 非法参数在 TCP 发送前被拒绝
+- [ ] 同一 `idempotency_key` 重试不会重复创建节点
+- [ ] Revision 不匹配时拒绝写入并返回最新摘要
+- [ ] Bridge 单元测试与 Hybrid/Legacy 暴露测试通过
+
+## P0：实时发现与有界场景快照
+
+目标：让模型不猜节点类型、参数名和当前网络状态。
+
+### 正式 Catalog 能力
 
 - [ ] `search_node_types`
-  - 按父网络路径、节点类别、名称、描述和关键词搜索
-  - 返回节点类型名、标签、类别、命名空间、版本和官方文档
-  - 优先当前父网络中实际可创建的节点类型
+  - 按父网络路径、类别、名称、标签、描述和关键词搜索
+  - 只优先返回当前父网络中实际可创建的类型
+  - 返回完整类型名、类别、命名空间、版本、输入输出摘要和官方文档
 - [ ] `get_node_type_schema`
-  - 返回输入/输出、参数模板、默认值、菜单、范围和节点文档
-  - 支持分页及参数名称过滤
-  - 区分相同节点名的命名空间和版本
-
-### 网络快照
-
+  - 返回输入输出约束、参数模板、默认值、菜单和范围
+  - 支持参数过滤与分页
+  - 无法在不实例化节点的情况下获得的信息必须明确标记，不静默猜测
 - [ ] `get_network_snapshot`
   - 返回节点、连接、Flags、位置和可选参数摘要
-  - 支持深度、节点数量、参数数量和结果大小限制
-  - 默认不返回所有参数值和大型几何数据
-- [ ] `compare_network_snapshot`
-  - 比较预期节点图与当前节点图
-  - 返回新增、缺失、连接变化和参数差异
-  - 第一版只读，不自动修复
+  - 支持深度、节点数、参数数和结果字节上限
+  - 返回 `snapshot_revision` 和会话内节点身份
+  - 默认不返回全部参数值、几何数据或二进制内容
 
-### 原子图修改
+### 由模型承担
 
-- [ ] `apply_graph_patch`
-  - 支持 `create`、`delete`、`connect`、`disconnect`、`set_parameters`
-  - 支持 `collapse_to_subnetwork` 和 `extract_subnetwork`
-  - 支持请求内临时节点 ID，后续操作可引用新节点
-  - 支持 `dry_run=true` 进行完整预检
-  - 支持 `atomic=true`，任一步失败时不留下部分修改
-  - 整组操作对应一个 Houdini Undo 步骤
-  - 返回每项操作的状态、真实节点路径以及失败索引
-  - 限制单次操作数量和结果大小
-- [ ] `collapse_nodes_to_subnetwork`
-  - 将同一父网络下的一组节点折叠进 Subnetwork
-  - 自动建立 Subnet Input/Output 并重连跨边界连接
-  - 返回新 Subnetwork 路径、内部节点映射和边界连接映射
-  - 空 Subnetwork 继续使用通用 `create_node`，不重复实现
-- [ ] `extract_subnetwork`
-  - 将内部节点释放回父网络并恢复外部连接
-  - 默认只接受已验证的 Subnetwork 类型
-  - 可选删除释放后的空 Subnetwork
-- [ ] `copy_nodes`
-- [ ] `move_nodes`
-- [ ] `replace_node_type`
-  - 尽可能保留匹配参数和连接
-  - 替换前返回不能迁移的参数与连接
+- 比较两个 Snapshot 中的新增、缺失、连接和参数差异
+- 根据目标网络与当前网络生成 Graph Patch
+- 解释命名空间和版本差异并选择完整节点类型名
 
-Subnetwork 安全约束：
+仅当 Snapshot 比较已证明频繁消耗过多上下文时，再考虑增加服务端 `compare_network_snapshot`。
 
-- [ ] 目标节点必须属于同一个父网络
-- [ ] 根据 SOP、OBJ、VOP、LOP 等实时上下文选择可用 Subnetwork 类型
-- [ ] `dry_run` 返回预计的输入、输出和连接重排，不修改场景
-- [ ] Locked HDA 内默认禁止折叠或释放
-- [ ] 操作必须原子化，失败时不留下部分移动或断开的连接
-- [ ] 保留节点名称、位置、Flags 和可迁移的网络信息
-- [ ] Subnetwork、Compile Block 和 For-Each Block 保持不同语义
+### P0 验收
 
-### P0 验收场景
+- [ ] 从 `/obj` 发现 Geometry 容器，并在其内部发现 Box SOP
+- [ ] 非法 SOP/OBJ/VOP/LOP 上下文返回正确类别和相近类型建议
+- [ ] 大型网络严格遵守节点数和响应大小上限
+- [ ] Snapshot 相同内容产生稳定 Revision；网络变化后 Revision 改变
+- [ ] Houdini 本地文档不可用时仍可发现类型，并报告文档降级
 
-- [ ] 从 `/obj` 开始发现 Geometry 容器，在其内部发现并创建 Box SOP
-- [ ] 单次 Patch 创建 `box -> transform -> normal` 并设置参数
-- [ ] `dry_run` 不修改场景，同时返回真实类型和参数验证结果
-- [ ] Patch 中途失败时不留下新节点
-- [ ] 一个 `Ctrl+Z` 撤销整个成功 Patch
-- [ ] 非法 SOP/OBJ/LOP 上下文返回可用类别和相近类型建议
-- [ ] 折叠带有外部输入输出的节点链后，边界连接保持一致
-- [ ] 释放 Subnetwork 后恢复原节点链，并可单步 Undo
-- [ ] Locked HDA、跨父网络节点和不兼容上下文返回保护性错误
+## P1：HDA Core
 
-建议提交：
+目标：面向技术美术优先交付稳定的 HDA 创建闭环。模型负责设计资产、选择参数和组织界面；MCP 负责读取真实 HOM 状态、验证完整计划，并在一个受控事务中创建、绑定、验证和失败回滚。首版不扩展成完整资产发布平台。
 
-```text
-feat: add live Houdini node type discovery
-feat: add bounded network snapshots
-feat: add atomic graph patch operations
-feat: add guarded subnetwork collapse and extraction
-test: cover node discovery snapshots graph patches and subnetworks
-```
+HDA MVP 只依赖 P0 节点发现、现有节点/参数能力和最小 Channel 保护，不必等待完整 Graph Patch 或动画能力完成。
 
-## P1：表达式、通道与关键帧
+### P1.1 统一身份模型
 
-目标：正式支持动画，同时避免静态参数写入意外破坏已有 Channel。
+明确区分 HDA Instance、`hou.NodeType`、`hou.HDADefinition` 和 Library。
 
-- [ ] `get_channel_info`
-  - 区分静态值、表达式、参数引用和关键帧
-- [ ] `set_parameter_expression`
-  - 明确表达式语言：HScript 或 Python
-  - 默认禁止覆盖已有关键帧，除非显式允许
-- [ ] `clear_parameter_expression`
-- [ ] `get_keyframes`
-  - 支持帧范围和分页
-- [ ] `set_keyframes`
-  - 支持 float/string keyframe、值、斜率和加速度
-  - 多个关键帧作为一个 Undo 步骤
-- [ ] `delete_keyframes`
-  - 必须指定参数和帧范围，不提供无界全场景删除
-- [ ] `set_keyframe_interpolation`
-- [ ] `get_playbar_info`
-- [ ] `set_frame_range`
-- [ ] `set_current_frame`
+- [ ] 稳定 `definition_id` 由节点类别、完整类型名和规范化 `library_ref` 组成
+- [ ] 易变的文件哈希、Definition 哈希和修改时间单独作为 `revision_token`
+- [ ] 返回命名空间、基础名、版本、当前/首选 Definition、Lock 和可编辑状态
+- [ ] 外部与 Embedded Library 使用可移植引用；执行时才解析本机绝对路径
+- [ ] License 来自当前 Houdini/HOM 实际状态，不根据扩展名猜测
 
-官方依据至少覆盖：
-
-- [ ] `hou.Parm`
-- [ ] `hou.Keyframe`
-- [ ] `hou.StringKeyframe`
-- [ ] `hou.playbar`
-- [ ] Houdini Expression Language 文档
-
-### P1 验收场景
-
-- [ ] 读取已有静态值、表达式和关键帧时能正确分类
-- [ ] 默认操作不会静默覆盖现有动画
-- [ ] 为 Transform 的 `tx` 写入三个关键帧并正确读取
-- [ ] 删除限定范围关键帧后可单步 Undo
-- [ ] headless 模式与 GUI 模式的时间轴行为一致
-
-建议提交：
-
-```text
-feat: add channel expression inspection and editing
-feat: add typed Houdini keyframe capabilities
-test: cover expression and keyframe safety
-```
-
-## P2：完整 HDA 全流程 Automation
-
-目标：让 MCP 可以把已创建的节点网络安全地转化为可安装、可复用、可升级、
-可验证、可回滚的 Houdini Digital Asset。P2 覆盖 HDA 的生产闭环，不仅是
-创建 `.hda` 文件。
-
-完整闭环：
-
-```text
-发现 HDA 与 Library
-→ 分析现有网络是否适合封装
-→ 折叠或使用已有 Subnetwork
-→ 创建 HDA Definition
-→ 配置输入输出
-→ 构建参数界面并提升内部参数
-→ 添加脚本、帮助、图标与资源
-→ 配置命名空间和版本
-→ 分析依赖并执行验证
-→ 发布、安装并创建测试实例
-→ 升级已有实例
-→ 出错时回滚 Definition 或 Library
-```
-
-### P2.0：统一 HDA 对象模型
-
-所有 HDA Tool 必须明确区分：
-
-- [ ] HDA 实例：场景中的 `hou.Node`
-- [ ] 节点类型：`hou.NodeType`
-- [ ] Definition：`hou.HDADefinition`
-- [ ] Library：外部 `.hda` / `.otl` 或 Houdini Embedded Library
-- [ ] Type Name：类别、命名空间、核心名称和版本
-- [ ] Current Definition、Preferred Definition 和同名冲突 Definition
-- [ ] Locked、Uneditable、Editable Nodes 和 Allow Editing of Contents 状态
-
-所有返回统一包含可获得的：
-
-- [ ] `node_type_name`
-- [ ] `category`
-- [ ] `namespace`
-- [ ] `base_name`
-- [ ] `version`
-- [ ] `definition_id`
-- [ ] 可移植 `library_ref`；执行时才解析绝对路径
-- [ ] `is_embedded`、`is_installed`、`is_current`、`is_preferred`
-- [ ] `is_locked`、`matches_definition`、`is_editable`
-- [ ] Definition 修改时间、输入输出范围和实例数量摘要
-
-`definition_id` 必须由节点类别、完整类型名、Library 身份和 Definition 元数据
-组合生成，禁止只按短类型名修改 Definition。
-
-### P2.1：HDA 发现、检查与实例化
-
-- [ ] `search_hda_types`
-  - 按名称、标签、类别、命名空间、版本和 Library 搜索
-  - 区分原生节点与 `node_type.definition() != None` 的 HDA
-  - 返回当前父网络中实际可实例化的 HDA 类型
-- [ ] `list_hda_libraries`
-  - 返回已安装 Library、Embedded Library 和 Definition 数量
-  - 默认不递归扫描整块磁盘
-- [ ] `list_hda_definitions`
-  - 支持 Library、类别、命名空间和版本过滤及分页
-- [ ] `get_hda_definition_info`
-  - 返回 Type Name 组成、Library、版本、Sections、参数、输入输出和权限摘要
-- [ ] `get_hda_instance_info`
-  - 返回实例路径、Definition、Lock 状态、是否匹配 Definition 和本地改动摘要
-- [ ] `get_hda_parameter_schema`
-  - 复用实时 `hou.ParmTemplateGroup`，返回正式 HDA 参数而非只看实例值
-- [ ] `create_hda_instance`
-  - 在兼容父网络中创建指定 Definition 的实例
-  - 同名多版本时必须使用完整类型名或明确的 Definition ID
-- [ ] `install_hda_library`
-  - 默认只安装明确指定的单个 Library
-  - 返回新增、替换、冲突和 Preferred Definition 变化
-- [ ] `uninstall_hda_library`
-  - 执行前检查当前 HIP 是否仍有实例依赖
-  - 默认拒绝卸载仍被使用的 Library
-
-### P2.2：封装候选分析与 HDA 创建
+### P1.2 最小正式能力
 
 - [ ] `analyze_hda_candidate`
-  - 接受 Subnetwork 或同一父网络下的一组节点
-  - 检查跨边界连接、节点引用、表达式、文件依赖、Locked HDA 和不可保存状态
-  - 返回建议输入输出、可提升参数、内部依赖和阻塞问题
-  - 只读，不修改场景或磁盘
-- [ ] `plan_hda_creation`
-  - 生成完整创建计划和预计文件/Definition 变化
-  - 支持 `embedded` 或外部 Library 目标
-  - 检查类型名、命名空间、版本和目标文件冲突
+  - 只读检查 Subnetwork 是否支持 `createDigitalAsset`
+  - 检查节点类别、边界输入输出、Locked HDA、外部引用、文件依赖和不可保存状态
+  - 返回当前 License、允许的 Library 类型、目标冲突、阻塞项和警告
+  - 从实时参数模板生成可提升参数候选，但由模型决定最终暴露内容
+- [ ] `search_hda_definitions`
+  - 统一覆盖已安装 Library、Definition、类型、命名空间和版本搜索
+  - 支持分页和父网络可实例化过滤
+- [ ] `get_hda_info`
+  - 接受实例路径或 Definition ID
+  - 返回身份、Lock、输入输出、Sections、依赖和可分页参数界面
 - [ ] `create_hda_from_subnetwork`
-  - 将已有 Subnetwork 转换为 HDA Definition
-  - 可选先调用 P0 的 `collapse_nodes_to_subnetwork`
-  - 支持 Operator Name、Label、Description、命名空间和版本
-  - 支持最小/最大输入数量及输出数量
-  - 默认 `overwrite=false`
-  - 成功后返回 Definition、实例、Library 和回滚信息
-- [ ] `create_hda_from_nodes`
-  - 组合“折叠节点 + 创建 HDA”为一个原子工作流
-  - 任一步失败时恢复原节点、位置和连接
-- [ ] `set_hda_input_output_schema`
-  - 设置输入数量范围、输入标签、输出标签和连接说明
-  - 验证 Subnet Connector 与 Definition Schema 一致
-
-创建 HDA 时不得根据文件扩展名猜测 License。由当前 Houdini License 和 HOM
-实际能力验证 `.hda`、`.hdalc`、`.hdanc` 等目标是否允许。
-
-### P2.3：正式参数界面与内部参数提升
-
-Spare Parameter 与 HDA Definition 参数必须作为不同能力处理。HDA 正式界面
-以 `hou.ParmTemplateGroup` 为事实来源。
-
-- [ ] `get_hda_interface_schema`
-  - 返回 Folder、Folder Set、参数顺序、类型、默认值、范围、菜单和 Tags
-  - 返回 `disable_when`、`hide_when`、Join、Label、Help 和 Callback 摘要
-- [ ] `validate_hda_interface_patch`
-  - 在写 Definition 前检查名称冲突、无效条件、非法菜单和不兼容模板
-  - `dry_run` 返回最终界面摘要
+  - 只接受已经分析并验证的 Subnetwork，首版不同时折叠任意节点
+  - 接受完整类型名、Label、Description、输入范围、外部 Library 和完整 Interface/Promotion 计划
+  - `dry_run=true` 返回 `plan_id`、`candidate_revision`、解析后的目标和预计修改
+  - 正式执行要求 `plan_id`、`expected_revision` 和 `idempotency_key`
+  - 首版只允许不存在的新外部 Library，固定 `overwrite=false`
+  - 在一次 Handler 调用中完成 Definition 创建、参数界面、参数提升、更新和验证
 - [ ] `apply_hda_interface_patch`
-  - 声明式支持添加、替换、移动和删除参数或 Folder
-  - 支持 Float、Int、String、File、Toggle、Button、Menu、Ordinal Menu
-  - 支持 Vector、Color、Ramp、Folder、Folder Set 和 Multiparm Block
-  - 删除或重命名参数前报告现有实例值、表达式和内部引用影响
-- [ ] `promote_hda_parameters`
-  - 将一个或多个内部参数提升到 HDA Definition
-  - 自动创建 HDA 参数到内部参数的引用
-  - 支持使用当前值或原始默认值作为 HDA 默认值
-  - 支持目标 Folder、Label、Name 和范围覆盖
-  - 返回每个 HDA 参数到内部参数的映射
-- [ ] `unpromote_hda_parameters`
-  - 删除提升关系前选择保留当前求值、恢复内部默认值或取消
-- [ ] `get_hda_parameter_bindings`
-  - 检查 HDA 参数与内部参数、表达式和 Channel Reference 的映射
-- [ ] `repair_hda_parameter_bindings`
-  - 只修复明确确认且可无损恢复的断开引用
-- [ ] `set_hda_parameter_callback`
-  - 回调脚本属于高风险写入，必须 `allow_unsafe=true`
-  - 明确 Python/HScript 语言并限制脚本大小
+  - 用 Pydantic 判别联合添加、移动、替换和删除参数或 Folder
+  - 支持普通参数提升，并建立 HDA 参数到内部参数的 Channel Reference
+  - 删除、重命名或解除提升前报告实例值、表达式和内部引用影响
+  - 接受 `expected_revision`；危险修改默认 `dry_run=true`
+- [ ] `validate_hda`
+  - 检查身份、Library、参数界面、输入输出、Sections、依赖和权限
+  - 创建或复用受控测试实例，设置测试参数、Cook、收集错误后清理
+  - 返回 Definition/Library 哈希、`matchesCurrentDefinition` 和实例解析结果
 
-### P2.4：Definition 编辑、锁定与实例同步
+### P1.3 参数界面与提升范围
 
-- [ ] `update_hda_definition_from_instance`
-  - 保存当前实例内容到 Definition
-  - 修改前比较实例与 Definition，并返回结构化差异
-  - 默认要求实例已显式进入可编辑状态
-- [ ] `allow_editing_hda_contents`
-  - 修改实例 Lock 状态前返回影响和当前 Definition
-- [ ] `match_current_definition`
-  - 丢弃实例本地改动前必须显式确认
-- [ ] `revert_hda_instance`
-  - 支持只恢复参数、只恢复内容或完整恢复
-- [ ] `sync_hda_instances`
-  - 按节点路径、Definition 或 HIP 范围同步实例
-  - 默认只生成同步计划，不直接修改所有实例
-- [ ] `copy_hda_definition`
-  - 用于新命名空间、新版本或新 Library
-  - 保留源 Definition，不默认替换
-- [ ] `rename_hda_definition`
-  - 通过安全复制、验证和可选迁移实现，不原地猜测重命名
-- [ ] `delete_hda_definition`
-  - 高风险操作；检查实例、嵌套依赖和 Preferred Definition
-  - 必须 `allow_unsafe=true` 且显式传入 Definition ID
-- [ ] `set_preferred_hda_definition`
-  - 同名多 Definition 时显式控制解析优先级
-- [ ] `get_hda_definition_diff`
-  - 比较内部节点、连接、参数界面、Sections、版本和输入输出 Schema
+首版正式支持：
 
-### P2.5：命名空间、版本与迁移
+- [ ] Float、Int、String、Toggle 和 Menu
+- [ ] Vector、Color 和普通 Folder
+- [ ] 标量与普通 Tuple Channel Reference
+- [ ] 使用当前值或参数模板默认值作为 HDA 默认值
+- [ ] 目标 Name、Label、Folder、范围和菜单覆盖
 
-- [ ] `parse_hda_type_name`
-  - 返回类别、命名空间、核心名称和版本，不自行切割字符串猜测
-- [ ] `plan_hda_version_upgrade`
-  - 比较源/目标 Definition 和参数 Schema
-  - 返回参数迁移、重命名、删除、默认值变化和实例影响
-- [ ] `create_hda_version`
-  - 从现有 Definition 复制为新版本
-  - 默认保留旧版本并安装新版本
-- [ ] `set_hda_version_metadata`
-  - 写入版本、变更摘要和可选兼容范围
-- [ ] `migrate_hda_instances`
-  - 将明确范围内的实例迁移到目标完整类型名
-  - 保存可映射参数、输入连接、输出连接、位置、名称和 Flags
-  - 不可迁移数据必须先报告，默认不丢弃
-- [ ] `rollback_hda_instances`
-  - 使用迁移前 Manifest 将实例恢复到旧 Definition
+Ramp、Multiparm、Folder Set、Callback 和复杂条件界面留到第二阶段。遇到不支持的模板必须在 Dry Run 阶段明确拒绝，不能降级为错误类型。
 
-版本操作必须优先采用“创建新 Definition → 验证 → 迁移实例”，避免直接覆盖
-正在生产使用的旧 Definition。
+### P1.4 稳定创建事务
 
-### P2.6：Sections、脚本、帮助、图标与内嵌资源
-
-- [ ] `list_hda_sections`
-- [ ] `get_hda_section`
-  - 文本 Section 返回大小受限摘要或分页内容
-  - 二进制 Section 默认只返回元数据和哈希
-- [ ] `set_hda_section`
-  - 覆盖前返回原 Section 哈希并创建回滚记录
-  - 脚本和可执行 Section 必须 `allow_unsafe=true`
-- [ ] `delete_hda_section`
-  - 高风险；默认禁止删除 Houdini 必需 Section
-- [ ] `set_hda_python_module`
-- [ ] `set_hda_event_handler`
-  - 覆盖 OnCreated、OnLoaded、OnUpdated、OnDeleted 等事件
-  - 明确事件名、语言、大小限制和风险
-- [ ] `set_hda_help`
-  - 支持 Help 文本与 SideFX 文档引用
-- [ ] `set_hda_icon`
-  - 支持图标名称或受控资源，不把任意大文件塞进 Definition
-- [ ] `embed_hda_resource`
-  - 嵌入配置、模板和小型资源
-  - 限制类型、单文件大小和 Definition 总大小
-- [ ] `extract_hda_resource`
-  - 默认禁止覆盖磁盘目标
-- [ ] `get_hda_resource_manifest`
-  - 返回 Section 名称、类型、大小和 SHA-256，不直接返回全部二进制
-
-### P2.7：Viewer State、Handles 与高级交互
-
-- [ ] `get_hda_interaction_schema`
-  - 返回 Handle、Viewer State、State Script 和绑定参数摘要
-- [ ] `set_hda_handles`
-  - 配置参数 Handle 与参数绑定
-- [ ] `set_hda_viewer_state`
-  - Viewer State 脚本属于高风险写入，必须 `allow_unsafe=true`
-- [ ] `validate_hda_viewer_state`
-  - 静态检查注册信息和脚本；GUI 会话中可执行交互验证
-- [ ] `set_hda_editable_nodes`
-  - 明确 Editable Nodes 列表及资产锁定后的行为
-
-这些能力可以写入 Definition，但实际交互验收要求 `hou.isUIAvailable()`；在
-`hython` 中应可发现、可静态检查，并标记动态验证不可用。
-
-### P2.8：依赖分析与可移植性
-
-- [ ] `analyze_hda_dependencies`
-  - 分析嵌套 HDA、节点类型、外部文件参数、Python Module 和资源引用
-  - 区分 Houdini 内置依赖、项目依赖和机器绝对路径
-- [ ] `find_missing_hda_dependencies`
-- [ ] `find_external_hda_paths`
-  - 检测用户名、盘符、临时目录和版本目录硬编码
-- [ ] `remap_hda_paths`
-  - 只按明确规则改写 `$HIP`、`$JOB` 或项目变量
-  - 默认 `dry_run=true`
-- [ ] `get_hda_dependency_manifest`
-  - 输出可移植 Manifest，不复制 SideFX 自带文件
-- [ ] `validate_hda_portability`
-  - 在不安装额外依赖的干净会话中检查类型和文件引用
-
-### P2.9：验证、发布、安装与回滚闭环
-
-- [ ] `validate_hda_definition`
-  - 检查 Type Name、Library、参数界面、输入输出、Sections、依赖和权限
-- [ ] `test_hda_instance`
-  - 在临时网络创建实例、设置测试参数、Cook、检查错误后清理
-  - 测试修改在单独 Undo/临时 HIP 范围内完成
-- [ ] `create_hda_release_manifest`
-  - 记录完整类型名、版本、Library 哈希、依赖、测试结果和 Houdini 版本
-- [ ] `publish_hda_library`
-  - 发布前强制执行验证和实例 Smoke Test
-  - 默认发布到新文件，不覆盖已有 Release
-  - 返回产物路径、SHA-256 和 Manifest
-- [ ] `install_and_verify_hda_release`
-  - 安装发布产物并创建新实例验证解析到正确 Definition
-- [ ] `backup_hda_library`
-  - 修改外部 Library 前创建显式备份或版本化副本
-- [ ] `rollback_hda_library`
-  - 根据备份和 Manifest 恢复，并重新验证已安装 Definition
-- [ ] `unpublish_hda_release`
-  - 不直接删除；优先移出搜索路径或标记弃用
-  - 仍被 HIP/HDA 依赖时拒绝执行
-
-发布结果必须能在另一个 Houdini 会话中完成：
+`create_hda_from_subnetwork` 是高层事务边界，不是 `createDigitalAsset()` 的薄包装：
 
 ```text
-安装 Library
-→ 找到指定完整类型名和版本
-→ 创建实例
-→ 参数 Schema 与 Manifest 一致
-→ Cook 无错误
-→ 输入输出连接有效
-→ 卸载或回滚后环境恢复
+验证 Plan 与 Candidate Revision
+→ 记录 Subnetwork、连接、Flags 和目标文件状态
+→ 创建新 Definition
+→ 配置输入输出和正式参数界面
+→ 建立参数提升与 Channel Reference
+→ 更新 Definition
+→ 创建/检查实例并 Cook
+→ 验证 Library 和 Definition 哈希
+→ 成功提交，失败执行补偿回滚
 ```
 
-### P2.10：安全、事务与权限规则
+- [ ] 场景修改进入一个 Houdini Undo Group
+- [ ] 磁盘 Library 不依赖 Undo，单独记录创建、安装和哈希状态
+- [ ] 首版目标文件已存在时直接拒绝，不提供覆盖逃生参数
+- [ ] 失败时撤销场景变化、卸载本次 Definition，并只删除本次新建文件
+- [ ] 返回 `rolled_back`、`rollback_complete` 和 `residual_changes`
+- [ ] 补偿失败时保留诊断与产物路径，不静默声称成功回滚
+- [ ] 普通 HDA 创建不调用模型提供的任意 Python；只有脚本型 Section 以后才使用高风险门控
 
-- [ ] 所有写操作先支持 `dry_run` 或独立 Plan Tool
-- [ ] 默认禁止覆盖 HDA 文件、Definition、Section 和 Release
-- [ ] Definition 写入前记录文件哈希、Definition ID 和修改时间，防止并发覆盖
-- [ ] 外部文件修改采用临时文件验证后再原子替换
-- [ ] Embedded Definition 修改前要求 HIP 有可恢复保存点
-- [ ] 修改 Definition 时报告受影响实例数量和路径摘要
-- [ ] 修改正在使用的 Definition 默认创建新版本，不原地覆盖
-- [ ] 写 Python/HScript、Callbacks、Event Handlers、Viewer State 必须
-  `allow_unsafe=true`
-- [ ] 删除 Definition、Library、Section 或不可逆迁移必须高风险门控
-- [ ] 不将 HDA 二进制内容、密钥或大型资源放入 MCP 返回上下文
-- [ ] 遵守当前 Houdini License，不尝试绕过 Commercial/Indie/Apprentice 限制
-- [ ] 所有路径使用 `pathlib`、环境展开和平台适配，不写死盘符或用户名
-- [ ] 场景内修改支持 Undo；磁盘 Library 修改使用备份/Manifest 回滚
+### P1.5 由模型与配方承担
 
-### P2.11：SideFX 官方文档绑定
+- 决定资产边界、命名空间、基础名、版本和 Label
+- 选择需要提升的参数、名称、Label、Folder 和默认值策略
+- 根据候选分析结果修复外部引用和不适合封装的网络结构
+- 比较两个 HDA 摘要并解释兼容性差异
 
-HDA Registry Tool 至少绑定下列实际相关文档之一，并由测试验证对应 DocRef 在
-当前 Houdini 官方帮助中存在：
+### P1.6 后续按需晋升
 
-- [ ] `hou.HDADefinition`
-- [ ] `hou.HDASection`
-- [ ] `hou.NodeType`
-- [ ] `hou.NodeTypeCategory`
-- [ ] `hou.Node`
-- [ ] `hou.hda`
-- [ ] `hou.ParmTemplateGroup`
-- [ ] `hou.ParmTemplate` 及具体参数模板类型
-- [ ] `hou.ViewerStateTemplate`
-- [ ] Houdini Digital Assets 用户文档
-- [ ] Operator Type Properties、Namespacing、Versioning 和 Safeguarding 文档
+以下能力保留在 Backlog，不阻塞 HDA Core 完成：
 
-文档不可用时 HDA Tool 继续执行，但返回 `docs_status: degraded`；不得联网抓取
-文档作为运行时前置条件。
+- Ramp、Multiparm、Folder Set 和复杂条件界面
+- 断开参数绑定的自动修复
+- Definition Diff、版本复制和实例迁移
+- Python Module、Event Handler、Help、Icon 和资源 Section
+- 发布 Manifest、干净会话安装验证和已有 Library 回滚
+- Viewer State、Handles 和 Editable Nodes
 
-### P2.12：HDA 测试矩阵与验收场景
+脚本、Callback、Event Handler 和 Viewer State 写入必须 `allow_unsafe=true`。删除、覆盖和迁移还必须提供完整目标 ID、`expected_revision` 和显式确认。
 
-只读与发现：
+### P1 验收
 
-- [ ] 正确区分原生节点与 HDA 节点类型
-- [ ] 多 Library、同名、多命名空间和多版本结果不混淆
-- [ ] Embedded 与外部 Definition 返回正确身份
+- [ ] 正确区分原生节点、HDA 类型、实例、Definition 和 Library
+- [ ] Candidate Dry Run 能发现非法上下文、Locked 内容、外部引用、License 和目标冲突
+- [ ] 将已有 `box -> transform -> normal` Subnetwork 创建为 `namespace::asset::1.0`
+- [ ] 提升至少一个 Float、Vector 和 Menu 参数，并保持内部 Channel Reference
+- [ ] 参数界面、输入输出、实例解析和 Cook 结果符合预期
+- [ ] 已存在目标 Library 时拒绝执行且不改变场景
+- [ ] 创建中途失败时恢复原 Subnetwork，并卸载/删除本次新建 Definition 和文件
+- [ ] 回滚结果明确报告是否完整以及任何残留变化
+- [ ] 同名、多命名空间、多版本和 Embedded Definition 不混淆
+- [ ] Hybrid 公开 Tool 数量不因 HDA 能力增加
 
-创建与参数：
+## P2：参数安全与原子图编辑
 
-- [ ] 将 P0 创建的 `box -> transform -> normal` 网络折叠并打包为 HDA
-- [ ] 自动暴露 Size、Translate、Seed 等内部参数并保持 Channel Reference
-- [ ] 创建 Folder、Menu、Ramp 和 Multiparm 后 Schema 可完整读取
-- [ ] 输入输出连接在创建 HDA 前后保持一致
-- [ ] 创建失败时恢复原 Subnetwork、连接和磁盘状态
+目标：用一个通用图修改能力承载大多数节点网络、材质网络和 LOP 网络构建。HDA MVP 之前先完成本节的 Channel 保护；完整 Graph Patch 可在 HDA Core 之后交付。
 
-Definition 与版本：
+### P2.1 先保护 Channel
 
-- [ ] 修改一个实例后生成 Definition Diff
-- [ ] 从 `namespace::asset::1.0` 创建 `namespace::asset::2.0`
-- [ ] 迁移实例时保留参数、连接、名称、位置和 Flags
-- [ ] 不兼容参数在迁移前被报告，不静默丢失
-- [ ] 能使用 Manifest 将实例和 Library 回滚到旧版本
+- [ ] `set_parameters` 在写入前识别静态值、表达式、参数引用和关键帧
+- [ ] 默认拒绝覆盖已有表达式或关键帧
+- [ ] 增加显式 `overwrite_channel=false`，并报告会被替换的 Channel 类型
+- [ ] 全部参数先验证再写入；默认不再产生部分成功结果
 
-资源与脚本：
+### P2.2 `apply_graph_patch`
 
-- [ ] Help、Icon、小型资源和 Python Module 可写入并重新读取
-- [ ] 未传 `allow_unsafe=true` 时拒绝可执行脚本写入
-- [ ] 大型/非法二进制资源被大小和类型门控拒绝
+- [ ] 使用 Pydantic 判别联合定义操作：`create`、`delete`、`connect`、`disconnect`、`set_parameters`、`set_flags`、`rename` 和 `set_position`
+- [ ] 支持请求内临时节点 ID，后续操作可引用新节点
+- [ ] 支持 `dry_run=true`，执行完整类型、参数、连接和权限预检
+- [ ] 接受可选 `expected_revision` 和 `idempotency_key`
+- [ ] 限制单次操作数量、参数数量和响应大小
+- [ ] 成功 Patch 对应一个 Houdini Undo 步骤
+- [ ] 返回每项操作状态、真实节点路径、失败索引和最终 Snapshot Revision
 
-依赖与发布：
+### 原子性定义
 
-- [ ] 检测嵌套 HDA 和缺失节点类型
-- [ ] 检测硬编码用户名、盘符和临时路径
-- [ ] Release Manifest 包含版本、哈希、依赖和测试结果
-- [ ] 在新的 headless Houdini 会话安装、实例化、Cook、卸载成功
-- [ ] 无 HDA 文件、只读目录、License 不匹配时安全降级且不留下残留文件
-
-### P2 建议实现阶段与提交
+`hou.undos.group()` 只负责合并撤销步骤，不等于异常自动回滚。`atomic=true` 必须采用：
 
 ```text
-feat: add typed HDA library definition and instance discovery
-test: cover HDA identity namespaces versions and embedded libraries
-
-feat: add planned HDA creation from subnetworks
-feat: add HDA input output schema automation
-test: cover atomic HDA creation and connection preservation
-
-feat: add declarative HDA parameter interface editing
-feat: add guarded internal parameter promotion and binding inspection
-test: cover HDA folders ramps multiparms and parameter bindings
-
-feat: add HDA definition diff locking and instance synchronization
-feat: add versioned HDA definition and instance migration workflows
-test: cover HDA migration compatibility and rollback
-
-feat: add guarded HDA sections scripts help icons and resources
-feat: add optional HDA viewer state and handle metadata automation
-test: cover HDA resource limits unsafe gates and UI availability
-
-feat: add HDA dependency and portability analysis
-feat: add validated HDA release publishing and installation
-test: cover clean-session HDA release verification and rollback
-
-docs: document end-to-end HDA automation workflows
+全量预检
+→ 生成执行计划与反向操作日志
+→ 执行
+→ 失败时按日志反向补偿
+→ 验证最终网络
+→ 返回回滚是否完整及残留变化
 ```
 
-### P2 完成定义
+- [ ] 所有操作在开始写入前完成静态预检
+- [ ] `atomic=true` 下只允许有可靠反向操作的 Patch 类型
+- [ ] 回滚失败返回 `rollback_complete=false` 和 `residual_changes`
+- [ ] 不支持可靠补偿的操作在执行前拒绝，而不是假装原子
+- [ ] `atomic=false` 必须显式传入，并返回部分结果
 
-P2 只有在下面的真实闭环通过后才算完成：
+### 高级图变换暂不进入首版 Patch
 
-- [ ] Agent 从普通节点网络创建带版本的 HDA
-- [ ] 自动生成正式参数界面并将参数绑定到内部节点
-- [ ] HDA 带有正确输入输出、帮助、图标和依赖 Manifest
-- [ ] 发布到新 Library，并在全新 Houdini 会话安装
-- [ ] 新实例参数、连接、Cook 和输出符合预期
-- [ ] 从旧版本升级到新版本且不丢失可迁移数据
-- [ ] 一次失败发布不会破坏原 Definition 或现有实例
-- [ ] 能使用备份和 Release Manifest 完整回滚
-- [ ] Hybrid MCP 公开 Tool 数量不因 HDA 子能力数量显著增长
+以下操作涉及跨父网络迁移、边界连接重建或节点类型转换，先作为工作流配方和实验能力验证：
 
-## P3：MaterialX、材质网络与 Karma
+- [ ] 折叠节点为 Subnetwork
+- [ ] 释放 Subnetwork
+- [ ] 跨网络复制或移动节点
+- [ ] 替换节点类型并迁移参数和连接
 
-目标：从基础材质分配扩展到可检查、可编辑的现代 Houdini 渲染工作流。
+如果技术美术工作流需要把现有选择直接封装为 HDA，则优先把“折叠节点为 Subnetwork”晋升为专用原子能力；从零构建 HDA 时仍优先先创建 Subnetwork，再在内部构图。Subnetwork、Compile Block 和 For-Each Block 必须保持不同语义。
 
-- [ ] `get_material_info`
-- [ ] `find_material_assignments`
-- [ ] `create_material_network`
-- [ ] `create_mtlx_material`
-- [ ] `set_shader_parameters`
-- [ ] `connect_shader_nodes`
-- [ ] `assign_material`
-- [ ] `configure_karma_rop`
-- [ ] `configure_karma_lop`
-- [ ] `render_to_disk`
-- [ ] `get_render_status`
-- [ ] `cancel_render`
+### P2 验收
 
-约束：
+- [ ] 单次 Patch 创建 `box -> transform -> normal` 并设置参数
+- [ ] `dry_run` 不修改场景，同时返回真实类型和参数验证结果
+- [ ] Patch 中途失败后不留下新节点或断开的连接
+- [ ] 一个 `Ctrl+Z` 撤销整个成功 Patch
+- [ ] 已有表达式或关键帧默认不会被静默覆盖
+- [ ] Locked HDA、跨父网络连接和陈旧 Revision 返回保护性错误
 
-- [ ] Shader、VOP、LOP 类型从当前 Houdini 注册类型中选择
-- [ ] 优先 MaterialX/Karma，传统 SHOP/VOP 保留兼容路径
-- [ ] 输出文件默认禁止覆盖
-- [ ] 长时间渲染不阻塞一次 MCP 请求，使用任务状态查询
+## P3：MaterialX、Solaris 与 USD 检查
 
-## P4：Solaris、LOP 与 USD
+目标：作为 HDA 和图编辑之后的次级能力，优先复用通用节点发现与 Graph Patch，只为普通节点图无法表达的材质绑定和 USD Stage 事实增加只读能力。
 
-目标：提供版本感知且明确 Edit Target 的 USD 操作。
+### 由通用原语与配方完成
 
-- [ ] `get_stage_info`
-- [ ] `find_prims`
-- [ ] `get_prim_info`
-- [ ] `create_lop_node`
-- [ ] `set_prim_attribute`
-- [ ] `set_prim_variant`
-- [ ] `set_prim_visibility`
-- [ ] `create_sublayer`
-- [ ] `configure_reference`
-- [ ] `configure_material_binding`
-- [ ] `export_usd`
+- 创建 Material Library、MaterialX 和 Karma 节点网络
+- 设置 Shader 参数和连接 Shader 节点
+- 创建和连接 LOP 节点
+- 通过 LOP 网络配置 Reference、Sublayer、Variant、Visibility 和 Material Binding
+- 配置 Karma ROP/LOP 节点参数
 
-约束：
+这些工作流使用当前 Houdini 注册类型与参数 Schema，不增加 `create_lop_node`、`set_shader_parameters`、`connect_shader_nodes` 等薄包装。
 
-- [ ] 默认通过 LOP 节点进行持久编辑
-- [ ] 明确区分 Session Layer、Root Layer 和 LOP 网络
-- [ ] 所有写入返回 Prim Path、Layer 和 Edit Target
-- [ ] USD 导出默认禁止覆盖文件
-- [ ] Solaris/USD 不可用时仍允许搜索并返回不可用原因
+### 候选只读能力
 
-## P5：异步任务基础设施
+- [ ] `get_material_assignments`
+  - 统一检查 OBJ/SOP/LOP 中的材质绑定摘要
+- [ ] `get_stage_snapshot`
+  - 返回有界 Prim、Layer、Variant、Edit Target 和 Material Binding 摘要
 
-目标：为渲染、模拟、缓存和 PDG 提供不阻塞 Bridge 的统一任务模型。
+只有在模型无法用 LOP Patch 安全表达时，才考虑直接 USD Prim 写入能力。默认持久编辑应通过 LOP 节点完成，不直接修改 Session Layer。
 
-- [ ] 内部 `JobRegistry`
-- [ ] `get_job_status`
-- [ ] `cancel_job`
-- [ ] 任务 ID、类型、状态、进度、开始/结束时间和简短日志
-- [ ] 任务结果有大小上限，较大产物只返回路径和摘要
-- [ ] Houdini 退出或 Shelf Server 重启后返回明确的任务失效状态
-- [ ] 限制并发任务数
-- [ ] 不允许后台线程直接调用非线程安全的 `hou` UI API
+### P3 验收
 
-只有实际证明高频后，才考虑将通用任务查询提升为直接 MCP Tool。
+- [ ] 模型通过发现、Schema 和 Patch 创建 MaterialX/Karma 网络
+- [ ] 材质分配可跨 OBJ/SOP/LOP 检查
+- [ ] Stage Snapshot 明确 Prim、Layer 和 Edit Target
+- [ ] Solaris、Karma 或 License 不可用时返回明确原因
 
-## P6：模拟与缓存
+## 工作流配方
 
-- [ ] `get_simulation_info`
-- [ ] `configure_simulation_range`
-- [ ] `reset_simulation`
-- [ ] `start_simulation_job`
-- [ ] `get_dop_object_info`
-- [ ] `get_cache_status`
-- [ ] `configure_file_cache`
-- [ ] `start_file_cache_job`
-- [ ] `validate_cache_path`
+模型承担组合能力，需要稳定、可测试的配方支持，而不是继续增加 Tool。
 
-安全要求：
+- [ ] 为以下工作流提供版本感知的配方与最小示例：
+  - SOP 基础建模网络
+  - MaterialX + Karma 材质网络
+  - Solaris Reference、Sublayer、Variant 和 Material Binding
+  - 从已验证 Subnetwork 创建 HDA
+- [ ] 配方只引用能力名和实时发现步骤，不硬编码完整节点/参数清单
+- [ ] 配方包含失败分支、回滚方式和结果验证
+- [ ] 配方在当前 Houdini headless 测试中定期验证
 
-- [ ] 帧范围、Cook 时长和磁盘写入有明确上限
-- [ ] 缓存覆盖必须显式允许
-- [ ] 启动前检查目录、剩余空间和节点错误
-- [ ] 支持取消与失败后的清晰诊断
+如果某个配方长期需要大量往返或频繁失败，再以真实证据提议专用 Catalog 能力。
 
-## P7：TOP/PDG
+## 路径与磁盘写入统一规则
 
-- [ ] `get_pdg_graph_info`
-- [ ] `generate_work_items`
-- [ ] `start_pdg_cook`
-- [ ] `get_work_item_status`
-- [ ] `get_work_item_result`
-- [ ] `cancel_pdg_cook`
-- [ ] `dirty_pdg_node`
+- [ ] 使用 `pathlib`、Houdini 环境展开和规范化绝对路径进行执行时验证
+- [ ] 不在 Schema 中使用 `C:/temp/` 等平台特定默认路径
+- [ ] 默认禁止覆盖 HIP、HDA 和 USD 等磁盘产物
+- [ ] 检查目标是否位于允许范围、父目录是否存在/可写以及符号链接后的真实目标
+- [ ] 外部文件修改优先写临时文件，验证后再替换
+- [ ] 返回产物大小、SHA-256、是否覆盖和备份/Manifest 引用
+- [ ] License 决策来自当前 Houdini/HOM 能力，不根据扩展名猜测
 
-PDG Cook 必须使用 P5 的异步任务模型，不在一次 MCP 请求中同步等待整个图完成。
+## 测试矩阵
 
-## P8：Houdini UI 与视口
+### Bridge 单元测试
 
-目标：只在 Houdini GUI 会话中提供可选的交互辅助能力。
+- [ ] 参数校验、未知字段拒绝和判别联合错误
+- [ ] Hybrid/Legacy 暴露、Catalog 搜索分页和多关键词评分
+- [ ] 高风险、覆盖、Revision 和幂等门控
+- [ ] DocRef、便携帮助发现和文档降级
+- [ ] 动态 Availability 的 `available/unavailable/unknown`
 
-- [ ] `get_ui_context`
-- [ ] `get_current_network`
-- [ ] `get_selected_nodes`
-- [ ] `select_nodes`
-- [ ] `frame_nodes`
-- [ ] `set_network_editor_path`
-- [ ] `get_viewport_state`
-- [ ] `set_viewport_camera`
+### Houdini headless 集成测试
 
-约束：
+- [ ] 实时类型与参数发现
+- [ ] Snapshot 限制、Revision 和 Graph Patch 原子补偿
+- [ ] Channel 保护不覆盖已有表达式或关键帧
+- [ ] HDA 创建、身份、参数界面、License 和覆盖保护
+- [ ] MaterialX、LOP 和 USD 的可用能力按当前安装条件运行或跳过
 
-- [ ] 使用 `hou.isUIAvailable()` 进行可用性判断
-- [ ] `hython` 中可搜索但标记为不可用
-- [ ] UI Tool 不成为场景自动化能力的依赖
-- [ ] 选择和视口操作与场景持久修改分开标记
+### 故障注入
+
+- [ ] TCP 超时后使用同一幂等键重试
+- [ ] Patch 和 HDA 创建中途失败的补偿回滚
+- [ ] 只读目录、磁盘不足、已有目标和失效路径
+- [ ] Houdini 退出或 Shelf Server 重启时的明确错误
+
+## 近期里程碑
+
+### Milestone A：HDA 就绪基础
+
+- [ ] 在现有 `find_nodes`、`get_parameter_schema` 和 SideFX Docs 基础上完成节点类型发现、Schema 和有界 Snapshot
+- [ ] 完成 `set_parameters` Channel 保护和“全部验证后再写入”
+- [ ] 只实现上述能力实际需要的响应、Availability 和分页增强
+- [ ] 保持现有 8+3 Hybrid 表面和 31 项 Catalog 能力兼容
+- [ ] Bridge 单元测试与新增发现能力的 headless 测试通过
+
+### Milestone B：稳定 HDA MVP
+
+- [ ] 完成 HDA Candidate 分析、Definition 搜索和统一身份读取
+- [ ] 完成带 Dry Run、Plan、Revision 和幂等的 `create_hda_from_subnetwork`
+- [ ] 完成常用参数界面、参数提升和内部 Channel Reference
+- [ ] 完成实例 Cook、Library 哈希、覆盖保护和失败补偿验证
+- [ ] 通过 `box -> transform -> normal` Subnetwork 创建版本化 HDA 的真实验收
+
+### Milestone C：高效图编辑与次级领域
+
+- [ ] 完成首版原子 `apply_graph_patch`，复用现有节点、参数、连接和 Flag Handler
+- [ ] 根据实际 HDA 工作流决定是否晋升原子 Subnetwork 折叠能力
+- [ ] 用通用原语与配方完成 MaterialX/Solaris 网络
+- [ ] 只在确有需求时增加材质绑定和 Stage Snapshot 只读能力
 
 ## 暂不优先
 
-- [ ] CHOP 专用工作流
-- [ ] Takes 和 Bundles
-- [ ] Python Panel 创建与编辑
-- [ ] Desktop/Pane 布局持久化
-- [ ] 第三方渲染器专用 Tool
-- [ ] 第三方资产平台的更多直接集成
+- HDA Viewer State、Handles 和高级交互资产
+- 完整 HDA 发布平台、跨项目依赖打包和自动市场发布
+- 表达式、关键帧和时间轴 Tool；动画优先通过 Wrangle 中的 `$F`、`@Frame`、`@Time` 和 `@TimeInc` 编码
+- JobRegistry、异步 Render 和异步 USD Export
+- Simulation、File Cache 和 TOP/PDG 专用能力
+- Houdini UI、选择、Pane、视口和相机控制
+- CHOP 专用工作流、Takes 和 Bundles
+- Python Panel 创建与编辑
+- Desktop/Pane 布局持久化
+- 第三方渲染器专用 Tool
+- 第三方资产平台的更多直接集成
 
-这些领域继续可通过 `execute_houdini_code` 处理实验性需求。只有调用模式稳定、
-能定义严格 Schema、能绑定官方文档并有明确安全边界后，再升级为正式 Catalog
-能力。
+实验性需求仍可通过高风险 `execute_houdini_code` 处理，但该逃生口不替代稳定能力。只有调用模式稳定、Schema 严格、安全边界明确且能绑定官方文档后，才晋升为正式 Catalog 能力。
 
-## 近期建议里程碑
+## 建议提交顺序
 
-### Milestone A：可靠构图
+```text
+feat: extend the existing catalog with live node discovery
+feat: add bounded network snapshots on the current TCP bridge
+fix: protect parameter channels from implicit overwrite
+feat: add HDA candidate discovery and stable identity
+feat: add transactional HDA creation from subnetworks
+feat: add guarded HDA interface editing and parameter promotion
+test: cover HDA license overwrite validation and rollback
+feat: batch existing graph handlers into validated atomic patches
+docs: add model-composed Houdini workflow recipes
+test: cover retries graph rollback and production workflows
+```
 
-- [ ] 完成 `search_node_types`
-- [ ] 完成 `get_node_type_schema`
-- [ ] 完成 `get_network_snapshot`
-- [ ] 完成 `apply_graph_patch`
-- [ ] 完成 `collapse_nodes_to_subnetwork`
-- [ ] 完成 `extract_subnetwork`
-- [ ] 通过单元测试和 Houdini headless 集成测试
-
-### Milestone B：参数不会破坏动画
-
-- [ ] `set_parameters` 检测已有表达式/关键帧并返回保护性错误
-- [ ] 完成表达式查询和设置
-- [ ] 完成关键帧查询、写入和删除
-- [ ] 验证单步 Undo
-
-### Milestone C：生产资产与渲染
-
-- [ ] 完成 HDA 发现与只读检查
-- [ ] 完成 MaterialX 材质网络基础能力
-- [ ] 建立异步 Job 基础设施
-- [ ] 完成 Karma 渲染任务状态查询
-
-## 公开 MCP Tool 数量策略
-
-- [ ] 默认 Hybrid 公开面保持紧凑
-- [ ] 新能力默认只进入 Catalog
-- [ ] 只有跨领域、高频、参数稳定且能显著减少目录调用的能力才考虑直连
-- [ ] 任何新增直连 Tool 都要增加 Hybrid/Legacy 暴露测试
-- [ ] `execute_houdini_code` 保留高风险逃生口，但不代替正式能力实现
+每个提交前运行相关单元测试；涉及 `hou` 的主要能力组还需通过 headless 集成测试。除非用户明确要求，不合并、不推送、不改变远程仓库。
