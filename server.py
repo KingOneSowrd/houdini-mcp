@@ -666,7 +666,10 @@ class HoudiniMCPServer:
             current = stack.pop()
             records.append((current.path(), current.type().name(), tuple(current.position())))
             for connection in current.inputConnections():
-                records.append((connection.inputNode().path(), current.path(), connection.inputIndex(), connection.outputIndex()))
+                input_node = connection.inputNode()
+                if input_node is None:
+                    continue
+                records.append((input_node.path(), current.path(), connection.inputIndex(), connection.outputIndex()))
             stack.extend(reversed(list(current.children())))
         payload = json.dumps(records, sort_keys=True, default=str).encode("utf-8")
         return hashlib.sha256(payload).hexdigest()
@@ -731,7 +734,12 @@ class HoudiniMCPServer:
         truncated = False
         while queue and len(nodes) < max_nodes:
             node, level = queue.pop(0)
-            entry = {"id": node.sessionId(), "path": node.path(), "name": node.name(), "type": node.type().name(), "category": node.type().category().name(), "position": list(node.position()), "inputs": [{"input_index": c.inputIndex(), "output_index": c.outputIndex(), "from": c.inputNode().path()} for c in node.inputConnections()]}
+            inputs = []
+            for connection in node.inputConnections():
+                input_node = connection.inputNode()
+                if input_node is not None:
+                    inputs.append({"input_index": connection.inputIndex(), "output_index": connection.outputIndex(), "from": input_node.path()})
+            entry = {"id": node.sessionId(), "path": node.path(), "name": node.name(), "type": node.type().name(), "category": node.type().category().name(), "position": list(node.position()), "inputs": inputs}
             if include_parameters:
                 entry["parameters"] = [{"name": pt.name(), "value": self._parm_value(pt)} for pt in node.parmTuples()[:max_parameters]]
             candidate = nodes + [entry]
