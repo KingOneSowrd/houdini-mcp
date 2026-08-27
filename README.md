@@ -5,6 +5,45 @@
 1. A **Houdini plugin** (Python package) that listens on a local port (default `localhost:9900`, configurable with `HOUDINI_MCP_PORT`) and handles commands (creating and modifying nodes, executing code, etc.).
 2. An **MCP bridge script** you run via **uv** (or system Python) that communicates via **std**in/**std**out with Claude and **TCP** with Houdini.
 
+## Project structure
+
+The runtime entry points intentionally remain at the repository root so the
+existing Houdini package, Shelf Tool, and `uv run` installation workflows keep
+working.
+
+```text
+houdini-mcp/
+├── houdini_mcp_server.py       # FastMCP stdio bridge and direct MCP tools
+├── server.py                   # Houdini-side TCP server and HOM handlers
+├── __init__.py                 # Houdini package start/stop lifecycle
+├── houdini_catalog.py          # Typed catalog capability declarations
+├── tool_registry.py            # Discovery, validation, risk, and dispatch
+├── sidefx_docs.py              # Installed SideFX documentation provider
+├── HoudiniMCPRender.py         # Houdini viewport/render helper routines
+├── shelf_tool_start_mcp.py     # Shelf Tool example: start server
+├── shelf_tool_stop_mcp.py      # Shelf Tool example: stop server
+├── tests/
+│   ├── headless_host.py        # hython integration-test host
+│   ├── test_tools.py           # Original/live Houdini capability tests
+│   ├── test_catalog_tools.py   # Catalog, material, USD, and HIP tests
+│   ├── test_expansion_tools.py # Graph Patch and HDA integration tests
+│   ├── test_registry_unit.py   # Registry and safety unit tests
+│   ├── test_hybrid_surface.py  # Hybrid/Legacy MCP exposure tests
+│   └── test_sidefx_docs.py     # Portable SideFX help discovery tests
+├── CAPABILITY_TODO.md          # Prioritized capability and workflow backlog
+├── AGENTS.md                   # Repository development constraints
+├── urls.env.example            # Optional OPUS configuration template
+├── pyproject.toml              # Python project metadata and dependencies
+├── uv.lock                     # Reproducible dependency lock
+├── .python-version             # Preferred Python version
+├── .gitignore
+├── LICENSE
+└── README.md
+```
+
+Local generated directories such as `.venv/`, `__pycache__/`, and uv caches
+are not part of the source layout and must remain untracked.
+
 ## Hybrid tool catalog
 
 HoudiniMCP uses a compact, documented tool surface by default. Frequently used
