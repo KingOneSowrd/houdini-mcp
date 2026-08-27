@@ -80,10 +80,31 @@ with tempfile.TemporaryDirectory() as temp_dir:
         apply_args = dict(create_args, dry_run=False, plan_id=plan["plan_id"], expected_revision=plan["candidate_revision"], idempotency_key=str(uuid.uuid4()))
         created = call("create_hda_from_subnetwork", apply_args, allow_unsafe=True)["result"]
         assert os.path.isfile(library_path) and created["library_sha256"], created
+        interface_args = {
+            "path": created["instance_path"],
+            "promotions": [{
+                "source_node": created["instance_path"] + "/xform1",
+                "source_parameter": "scale",
+                "name": "xform_scale",
+                "label": "Transform Scale",
+                "folder": "Transform",
+            }],
+        }
+        interface_plan = call("apply_hda_interface_patch", interface_args, allow_unsafe=True)["result"]
+        interface_apply = dict(
+            interface_args,
+            dry_run=False,
+            plan_id=interface_plan["plan_id"],
+            expected_revision=interface_plan["expected_revision"],
+            idempotency_key=str(uuid.uuid4()),
+        )
+        patched = call("apply_hda_interface_patch", interface_apply, allow_unsafe=True)["result"]
+        assert patched["library_sha256"] and patched["cook"]["cooked"], patched
         validated = call("validate_hda", {"path": created["instance_path"]})["result"]
         assert validated["cook"]["cooked"] and validated["matches_current_definition"], validated
         info = call("get_hda_info", {"definition_id": created["definition_id"]})["result"]
-        assert any(item["name"] == "box_size" for item in info["parameters"]), info
+        parameter_names = {item["name"] for item in info["parameters"]}
+        assert {"box_size", "xform_scale"}.issubset(parameter_names), info
     finally:
         conn.send_command("delete_node", {"path": ROOT})
         if os.path.isfile(library_path):

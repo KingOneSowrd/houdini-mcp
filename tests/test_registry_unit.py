@@ -98,7 +98,8 @@ class ToolRegistryTests(unittest.TestCase):
         expected = {
             "search_node_types", "get_node_type_schema", "get_network_snapshot",
             "analyze_hda_candidate", "search_hda_definitions", "get_hda_info",
-            "create_hda_from_subnetwork", "validate_hda", "apply_graph_patch",
+            "create_hda_from_subnetwork", "apply_hda_interface_patch", "validate_hda",
+            "apply_graph_patch", "get_material_assignments", "get_stage_snapshot",
         }
         self.assertTrue(expected.issubset(set(registry.names())))
         invalid = registry.invoke("get_network_snapshot", {"path": "/obj", "unknown": True})
@@ -109,6 +110,33 @@ class ToolRegistryTests(unittest.TestCase):
             allow_unsafe=True,
         )
         self.assertEqual(overwrite["origin"], "validation")
+
+    def test_effect_and_rollback_metadata_and_filters(self):
+        registry = build_houdini_registry(lambda command, args: {"status": "success", "result": args})
+        hda_patch = registry.get("apply_hda_interface_patch").schema()
+        self.assertEqual(hda_patch["effect_scope"], "disk")
+        self.assertEqual(hda_patch["rollback_strategy"], "backup")
+        self.assertEqual(hda_patch["availability"], "available")
+        names = {item["name"] for item in registry.search(effect_scope="disk", rollback_strategy="backup", limit=50)}
+        self.assertIn("apply_hda_interface_patch", names)
+
+    def test_unknown_availability_is_discoverable_and_invokable(self):
+        registry = ToolRegistry()
+        registry.register(
+            ToolSpec(
+                name="unknown",
+                category="session",
+                description="Unknown until a session is connected.",
+                arguments_model=EchoArguments,
+                invoke=lambda args: args,
+                docs=[DOC],
+                availability=lambda: (None, "connect to determine availability"),
+            )
+        )
+        summary = registry.search()[0]
+        self.assertIsNone(summary["available"])
+        self.assertEqual(summary["availability"], "unknown")
+        self.assertEqual(registry.invoke("unknown", {"value": 1})["status"], "success")
 
     def test_hda_disk_write_requires_unsafe_opt_in(self):
         registry = build_houdini_registry(lambda command, args: {"status": "success", "result": args})

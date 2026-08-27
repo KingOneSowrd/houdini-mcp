@@ -726,11 +726,16 @@ def _houdini_call(cmd_type: str, params: Dict[str, Any] = None) -> dict:
         return {"status": "error", "message": str(e), "origin": "mcp_bridge"}
 
     if response.get("status") == "error":
-        return {
+        error = {
             "status": "error",
             "message": response.get("message", "Unknown error"),
             "origin": response.get("origin", "houdini"),
         }
+        error.update({
+            key: value for key, value in response.items()
+            if key not in {"status", "message", "origin"}
+        })
+        return error
     return {"status": "success", "result": response.get("result", {})}
 
 
@@ -1145,6 +1150,17 @@ def _opus_availability() -> tuple[bool, Optional[str]]:
     return False, "OPUS requires RAPIDAPI_HOST_URL, RAPIDAPI_HOST and RAPIDAPI_KEY in urls.env"
 
 
+def _houdini_availability() -> tuple[Optional[bool], Optional[str]]:
+    connection = _houdini_connection
+    if connection is None or connection.sock is None:
+        return None, "Houdini availability is unknown until a session is connected"
+    try:
+        connection.sock.getpeername()
+        return True, None
+    except (OSError, socket.error):
+        return False, "The cached Houdini connection is no longer active"
+
+
 def _local_opus_handlers() -> Dict[str, Any]:
     return {
         "opus_get_model_names": lambda args: opus_get_model_names(None),
@@ -1160,6 +1176,7 @@ tool_registry = build_registry(
     relay=lambda command, params: _houdini_call(command, params),
     local_handlers=_local_opus_handlers(),
     opus_availability=_opus_availability,
+    houdini_availability=_houdini_availability,
 )
 
 _docs_provider: Optional[SideFXDocsProvider] = None
@@ -1193,6 +1210,7 @@ def houdini_ping(ctx: Context) -> dict:
 @mcp.tool()
 def search_tools(ctx: Context, query: str = "", category: str = None,
                  mutating: bool = None, risk: str = None, available: bool = None,
+                 effect_scope: str = None, rollback_strategy: str = None,
                  offset: int = 0, limit: int = 10) -> dict:
     """Search executable Houdini tools and bundled SideFX documentation."""
     provider = _get_docs_provider()
@@ -1206,6 +1224,8 @@ def search_tools(ctx: Context, query: str = "", category: str = None,
             mutating=mutating,
             risk=risk,
             available=available,
+            effect_scope=effect_scope,
+            rollback_strategy=rollback_strategy,
             offset=offset,
             limit=limit,
             houdini_version=provider.houdini_version,

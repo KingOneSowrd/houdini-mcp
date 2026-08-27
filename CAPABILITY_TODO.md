@@ -2,7 +2,7 @@
 
 本文档记录 Houdini MCP 在现有 Hybrid Tool Registry 基础上的精简扩展路线。
 
-本文档不是重构或替换现有 MCP 的设计稿。当前直连 Tool、31 项 Catalog 能力、Shelf Server、TCP Bridge、Tool Registry 和 SideFX Docs Provider 都作为既定基础继续使用；TODO 只描述在这些能力之上补齐的缺口，以及新增能力落地时必须同步完成的小幅加固。
+本文档不是重构或替换现有 MCP 的设计稿。当前直连 Tool、43 项 Catalog 能力、Shelf Server、TCP Bridge、Tool Registry 和 SideFX Docs Provider 都作为既定基础继续使用；TODO 只描述在这些能力之上补齐的缺口，以及新增能力落地时必须同步完成的小幅加固。
 
 核心原则：**让 MCP 承载实时事实、严格验证、安全边界和不可拆分的副作用；让模型承载规划、组合、比较和领域工作流。**
 
@@ -13,7 +13,7 @@ MCP 不追求把每个 Houdini HOM 方法包装成一个 Tool。模型应通过�
 ## 当前基线
 
 - [x] 默认 Hybrid 模式：8 个高频直连工具 + 3 个目录/调度入口
-- [x] 31 项内部 Catalog 能力
+- [x] 43 项内部 Catalog 能力
 - [x] Typed Tool Registry、Pydantic 参数校验和高风险调用门控
 - [x] Houdini 主线程 TCP Handler 和场景修改 Undo Group
 - [x] 当前 Houdini 版本的 `hom.zip` / `nodes.zip` 官方文档搜索
@@ -116,27 +116,27 @@ Git commit、文档和发布要求属于能力组的交付流程，不作为每�
 ### 响应与副作用元数据
 
 - [ ] 所有 Houdini 端异常补齐 `origin`
-- [ ] 当现有 `mutating`、`undoable` 和 `risk` 不足以描述磁盘/任务副作用时，再为 `ToolSpec` 增加 `effect_scope` 和 `rollback_strategy`
-- [ ] 高风险拒绝信息按 Tool 描述实际风险，不再只描述任意 Python
-- [ ] 区分 `available`、`unavailable` 和未连接时的 `unknown`
+- [x] 当现有 `mutating`、`undoable` 和 `risk` 不足以描述磁盘/任务副作用时，再为 `ToolSpec` 增加 `effect_scope` 和 `rollback_strategy`
+- [x] 高风险拒绝信息按 Tool 描述实际风险，不再只描述任意 Python
+- [x] 区分 `available`、`unavailable` 和未连接时的 `unknown`
 - [ ] 将 Houdini 版本、License、GUI、节点类别和可选模块状态作为动态能力事实缓存
 - [ ] 缓存失效时安全降级，不阻止 Catalog 搜索
 
 ### Registry 搜索可扩展性
 
-- [ ] `search_tools` 支持多关键词评分，不要求整段查询连续匹配
-- [ ] 支持分类、效果范围、变更标记、可用性和风险过滤
-- [ ] 支持分页，避免 HDA 等同类能力占满前十项
+- [x] `search_tools` 支持多关键词评分，不要求整段查询连续匹配
+- [x] 支持分类、效果范围、变更标记、可用性和风险过滤
+- [x] 支持分页，避免 HDA 等同类能力占满前十项
 - [ ] Tool Schema 返回前置条件、回滚策略、结果大小说明和经过验证的示例
 - [ ] 保持 Hybrid 公开表面为 8+3，除非有实际数据证明需要晋升
 
 ### 重试与并发安全
 
-- [ ] Graph Patch 和 HDA 磁盘写入支持可选 `idempotency_key`
+- [x] Graph Patch 和 HDA 磁盘写入支持可选 `idempotency_key`
 - [ ] Houdini 端短期缓存已完成操作结果，避免 TCP 超时重试重复写入
-- [ ] 需要防止陈旧写入的操作接受 `expected_revision`
-- [ ] 返回稳定的 `operation_id` 供日志、回滚和问题诊断使用
-- [ ] 串行化共享 TCP 连接上的请求/响应，避免并发 MCP 调用错配响应
+- [x] 需要防止陈旧写入的操作接受 `expected_revision`
+- [x] 返回稳定的 `operation_id` 供日志、回滚和问题诊断使用
+- [x] 串行化共享 TCP 连接上的请求/响应，避免并发 MCP 调用错配响应
 
 ### 支撑项验收
 
@@ -152,15 +152,15 @@ Git commit、文档和发布要求属于能力组的交付流程，不作为每�
 
 ### 正式 Catalog 能力
 
-- [ ] `search_node_types`
+- [x] `search_node_types`
   - 按父网络路径、类别、名称、标签、描述和关键词搜索
   - 只优先返回当前父网络中实际可创建的类型
   - 返回完整类型名、类别、命名空间、版本、输入输出摘要和官方文档
-- [ ] `get_node_type_schema`
+- [x] `get_node_type_schema`
   - 返回输入输出约束、参数模板、默认值、菜单和范围
   - 支持参数过滤与分页
   - 无法在不实例化节点的情况下获得的信息必须明确标记，不静默猜测
-- [ ] `get_network_snapshot`
+- [x] `get_network_snapshot`
   - 返回节点、连接、Flags、位置和可选参数摘要
   - 支持深度、节点数、参数数和结果字节上限
   - 返回 `snapshot_revision` 和会话内节点身份
@@ -200,30 +200,30 @@ HDA MVP 只依赖 P0 节点发现、现有节点/参数能力和最小 Channel �
 
 ### P1.2 最小正式能力
 
-- [ ] `analyze_hda_candidate`
+- [x] `analyze_hda_candidate`
   - 只读检查 Subnetwork 是否支持 `createDigitalAsset`
   - 检查节点类别、边界输入输出、Locked HDA、外部引用、文件依赖和不可保存状态
   - 返回当前 License、允许的 Library 类型、目标冲突、阻塞项和警告
   - 从实时参数模板生成可提升参数候选，但由模型决定最终暴露内容
-- [ ] `search_hda_definitions`
+- [x] `search_hda_definitions`
   - 统一覆盖已安装 Library、Definition、类型、命名空间和版本搜索
   - 支持分页和父网络可实例化过滤
-- [ ] `get_hda_info`
+- [x] `get_hda_info`
   - 接受实例路径或 Definition ID
   - 返回身份、Lock、输入输出、Sections、依赖和可分页参数界面
-- [ ] `create_hda_from_subnetwork`
+- [x] `create_hda_from_subnetwork`
   - 只接受已经分析并验证的 Subnetwork，首版不同时折叠任意节点
   - 接受完整类型名、Label、Description、输入范围、外部 Library 和完整 Interface/Promotion 计划
   - `dry_run=true` 返回 `plan_id`、`candidate_revision`、解析后的目标和预计修改
   - 正式执行要求 `plan_id`、`expected_revision` 和 `idempotency_key`
   - 首版只允许不存在的新外部 Library，固定 `overwrite=false`
   - 在一次 Handler 调用中完成 Definition 创建、参数界面、参数提升、更新和验证
-- [ ] `apply_hda_interface_patch`
+- [x] `apply_hda_interface_patch`
   - 用 Pydantic 判别联合添加、移动、替换和删除参数或 Folder
   - 支持普通参数提升，并建立 HDA 参数到内部参数的 Channel Reference
   - 删除、重命名或解除提升前报告实例值、表达式和内部引用影响
   - 接受 `expected_revision`；危险修改默认 `dry_run=true`
-- [ ] `validate_hda`
+- [x] `validate_hda`
   - 检查身份、Library、参数界面、输入输出、Sections、依赖和权限
   - 创建或复用受控测试实例，设置测试参数、Cook、收集错误后清理
   - 返回 Definition/Library 哈希、`matchesCurrentDefinition` 和实例解析结果
@@ -303,20 +303,20 @@ Ramp、Multiparm、Folder Set、Callback 和复杂条件界面留到第二阶段
 
 ### P2.1 先保护 Channel
 
-- [ ] `set_parameters` 在写入前识别静态值、表达式、参数引用和关键帧
-- [ ] 默认拒绝覆盖已有表达式或关键帧
-- [ ] 增加显式 `overwrite_channel=false`，并报告会被替换的 Channel 类型
-- [ ] 全部参数先验证再写入；默认不再产生部分成功结果
+- [x] `set_parameters` 在写入前识别静态值、表达式、参数引用和关键帧
+- [x] 默认拒绝覆盖已有表达式或关键帧
+- [x] 增加显式 `overwrite_channel=false`，并报告会被替换的 Channel 类型
+- [x] 全部参数先验证再写入；默认不再产生部分成功结果
 
 ### P2.2 `apply_graph_patch`
 
 - [ ] 使用 Pydantic 判别联合定义操作：`create`、`delete`、`connect`、`disconnect`、`set_parameters`、`set_flags`、`rename` 和 `set_position`
 - [ ] 支持请求内临时节点 ID，后续操作可引用新节点
 - [ ] 支持 `dry_run=true`，执行完整类型、参数、连接和权限预检
-- [ ] 接受可选 `expected_revision` 和 `idempotency_key`
-- [ ] 限制单次操作数量、参数数量和响应大小
-- [ ] 成功 Patch 对应一个 Houdini Undo 步骤
-- [ ] 返回每项操作状态、真实节点路径、失败索引和最终 Snapshot Revision
+- [x] 接受可选 `expected_revision` 和 `idempotency_key`
+- [x] 限制单次操作数量、参数数量和响应大小
+- [x] 成功 Patch 对应一个 Houdini Undo 步骤
+- [x] 返回每项操作状态、真实节点路径、失败索引和最终 Snapshot Revision
 
 ### 原子性定义
 
@@ -373,9 +373,9 @@ Ramp、Multiparm、Folder Set、Callback 和复杂条件界面留到第二阶段
 
 ### 候选只读能力
 
-- [ ] `get_material_assignments`
+- [x] `get_material_assignments`
   - 统一检查 OBJ/SOP/LOP 中的材质绑定摘要
-- [ ] `get_stage_snapshot`
+- [x] `get_stage_snapshot`
   - 返回有界 Prim、Layer、Variant、Edit Target 和 Material Binding 摘要
 
 只有在模型无法用 LOP Patch 安全表达时，才考虑直接 USD Prim 写入能力。默认持久编辑应通过 LOP 节点完成，不直接修改 Session Layer。

@@ -24,6 +24,22 @@ setting `HOUDINI_MCP_TOOL_MODE=legacy` in the MCP server environment. The
 installation command, stdio transport, TCP port, shelf tools, and Houdini
 package layout are identical in both modes.
 
+The catalog currently contains 43 capabilities. In addition to node, graph,
+geometry, material, render, HIP, and HDA creation operations, it includes:
+
+- `apply_hda_interface_patch` for planned, revision-checked parameter promotion
+  into an existing external HDA, with an on-disk backup rollback path;
+- `get_material_assignments` for OBJ parameters, Material SOP assignments,
+  primitive `shop_materialpath` values, and USD material relationships;
+- `get_stage_snapshot` for bounded, revisioned USD prim, layer, edit-target,
+  purpose, kind, and material-binding inspection.
+
+Tool schemas report effect scope, rollback strategy, prerequisites, expected
+result size, risk, and three-state availability. `search_tools` can filter by
+effect scope and rollback strategy. When Houdini has not connected yet, its
+session-dependent capabilities are reported as `unknown` rather than falsely
+claiming to be available.
+
 ### SideFX documentation binding
 
 Catalog metadata is grounded in the official documentation installed with the

@@ -14,7 +14,9 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 
 RiskLevel = Literal["low", "medium", "high"]
-Availability = Callable[[], tuple[bool, Optional[str]]]
+EffectScope = Literal["read_only", "scene", "session_ui", "disk", "external_process", "external_network"]
+RollbackStrategy = Literal["none", "undo", "compensation", "backup", "manifest"]
+Availability = Callable[[], tuple[Optional[bool], Optional[str]]]
 Invoker = Callable[[Dict[str, Any]], Dict[str, Any]]
 
 
@@ -72,8 +74,12 @@ class ToolSpec:
     risk: RiskLevel = "low"
     examples: List[Dict[str, Any]] = field(default_factory=list)
     availability: Optional[Availability] = None
+    effect_scope: Optional[EffectScope] = None
+    rollback_strategy: Optional[RollbackStrategy] = None
+    prerequisites: tuple[str, ...] = ()
+    result_size: str = "small"
 
-    def availability_status(self) -> tuple[bool, Optional[str]]:
+    def availability_status(self) -> tuple[Optional[bool], Optional[str]]:
         if self.availability is None:
             return True, None
         try:
@@ -83,6 +89,8 @@ class ToolSpec:
 
     def summary(self, houdini_version: Optional[str] = None) -> Dict[str, Any]:
         available, reason = self.availability_status()
+        effect_scope = self.effect_scope or ("scene" if self.mutating else "read_only")
+        rollback_strategy = self.rollback_strategy or ("undo" if self.undoable else "none")
         result: Dict[str, Any] = {
             "name": self.name,
             "category": self.category,
@@ -91,6 +99,11 @@ class ToolSpec:
             "undoable": self.undoable,
             "risk": self.risk,
             "available": available,
+            "availability": "available" if available is True else "unavailable" if available is False else "unknown",
+            "effect_scope": effect_scope,
+            "rollback_strategy": rollback_strategy,
+            "prerequisites": list(self.prerequisites),
+            "result_size": self.result_size,
             "official_docs": [doc.as_dict(houdini_version) for doc in self.docs[:2]],
         }
         if reason:
@@ -133,6 +146,8 @@ class ToolRegistry:
         mutating: Optional[bool] = None,
         risk: Optional[RiskLevel] = None,
         available: Optional[bool] = None,
+        effect_scope: Optional[EffectScope] = None,
+        rollback_strategy: Optional[RollbackStrategy] = None,
         offset: int = 0,
         limit: int = 10,
         houdini_version: Optional[str] = None,
@@ -145,6 +160,12 @@ class ToolRegistry:
             if mutating is not None and spec.mutating != mutating:
                 continue
             if risk is not None and spec.risk != risk:
+                continue
+            spec_effect_scope = spec.effect_scope or ("scene" if spec.mutating else "read_only")
+            spec_rollback = spec.rollback_strategy or ("undo" if spec.undoable else "none")
+            if effect_scope is not None and spec_effect_scope != effect_scope:
+                continue
+            if rollback_strategy is not None and spec_rollback != rollback_strategy:
                 continue
             spec_available, _ = spec.availability_status()
             if available is not None and spec_available != available:
@@ -191,18 +212,19 @@ class ToolRegistry:
                 "origin": "tool_registry",
             }
         available, reason = spec.availability_status()
-        if not available:
+        if available is False:
             return {
                 "status": "error",
                 "message": reason or f"Tool is unavailable: {name}",
                 "origin": "availability",
             }
         if spec.risk == "high" and not allow_unsafe:
+            scope = spec.effect_scope or ("scene" if spec.mutating else "read_only")
             return {
                 "status": "error",
                 "message": (
-                    f"Tool '{name}' is high risk. Retry with allow_unsafe=true "
-                    "only when arbitrary Houdini code execution is required."
+                    f"Tool '{name}' is high risk because it can affect '{scope}'. "
+                    "Review its schema and retry with allow_unsafe=true to confirm."
                 ),
                 "origin": "risk_policy",
             }

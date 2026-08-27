@@ -64,7 +64,17 @@ material = call("set_material", {"node_path": geo_path, "name": "mcp_catalog_mat
 assert material["result"]["material_node"], material
 assert material["result"]["material_type"], material
 material_path = material["result"]["material_node"]
+assignments = call("get_material_assignments", {"path": geo_path})["result"]
+assert any(item.get("material_path") == material_path for item in assignments["assignments"]), assignments
 print("  PASS  live material type resolution + assignment")
+
+lop_types = call("search_node_types", {"parent_path": "/stage", "query": "null"})["result"]
+null_lop_type = next((item["name"] for item in lop_types["node_types"] if item["name"].split("::", 1)[0] == "null"), None)
+assert null_lop_type, lop_types
+lop = call("create_node", {"node_type": null_lop_type, "parent_path": "/stage", "name": "mcp_catalog_stage"})["result"]
+stage_snapshot = call("get_stage_snapshot", {"path": lop["path"], "depth": 1})["result"]
+assert stage_snapshot["snapshot_revision"] and stage_snapshot["root_layer"], stage_snapshot
+print("  PASS  bounded USD stage and layer snapshot")
 
 hip_info = call("get_hip_info")
 assert "has_unsaved_changes" in hip_info["result"], hip_info
@@ -90,6 +100,7 @@ print("  PASS  joint tool + bundled SideFX document search")
 
 call("delete_node", {"path": geo_path})
 call("delete_node", {"path": material_path})
+call("delete_node", {"path": lop["path"]})
 bridge._houdini_connection.disconnect()
 bridge._houdini_connection = None
 print("\nALL CATALOG INTEGRATION TESTS PASSED")

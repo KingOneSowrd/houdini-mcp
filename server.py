@@ -269,8 +269,11 @@ class HoudiniMCPServer:
             "search_hda_definitions": self.search_hda_definitions,
             "get_hda_info": self.get_hda_info,
             "create_hda_from_subnetwork": self.create_hda_from_subnetwork,
+            "apply_hda_interface_patch": self.apply_hda_interface_patch,
             "validate_hda": self.validate_hda,
             "apply_graph_patch": self.apply_graph_patch,
+            "get_material_assignments": self.get_material_assignments,
+            "get_stage_snapshot": self.get_stage_snapshot,
             # Add new render handlers
             "render_single_view": self.handle_render_single_view,
             "render_quad_view": self.handle_render_quad_view,
@@ -304,7 +307,7 @@ class HoudiniMCPServer:
         "import_opus_url", "import_asset", "connect_nodes", "disconnect_input",
         "set_parameters", "set_node_flags", "layout_children",
         "create_wrangle", "set_wrangle_code",
-        "create_hda_from_subnetwork", "apply_graph_patch",
+        "create_hda_from_subnetwork", "apply_hda_interface_patch", "apply_graph_patch",
     })
 
     @contextmanager
@@ -1081,6 +1084,149 @@ class HoudiniMCPServer:
             meta.update({"instance_path": node.path(), "matches_current_definition": node.matchesCurrentDefinition(), "locked": not node.isEditableInsideLockedHDA()})
         return meta
 
+    @staticmethod
+    def _append_hda_template(group, template, folder=None):
+        if not folder:
+            group.append(template)
+            return
+        folder_path = tuple(part.strip() for part in folder.split("/") if part.strip())
+        if not folder_path:
+            group.append(template)
+            return
+        if group.findFolder(folder_path) is None:
+            if len(folder_path) != 1:
+                raise ValueError("Nested target folders must already exist: %s" % folder)
+            group.append(hou.FolderParmTemplate("mcp_%s" % uuid.uuid4().hex[:12], folder_path[0]))
+        group.appendToFolder(folder_path, template)
+
+    def _validate_hda_promotions(self, instance, promotions):
+        definition = instance.type().definition()
+        if definition is None:
+            raise ValueError("Node is not an HDA instance: %s" % instance.path())
+        group = definition.parmTemplateGroup()
+        planned_names = set()
+        validated = []
+        for promotion in promotions:
+            source = self._resolve_node(promotion["source_node"])
+            if not source.path().startswith(instance.path() + "/"):
+                raise ValueError("Promotion source must be inside the HDA instance: %s" % source.path())
+            source_tuple = source.parmTuple(promotion["source_parameter"])
+            if source_tuple is None:
+                raise ValueError("Promotion source parameter not found: %s" % promotion)
+            template = source_tuple.parmTemplate()
+            if not isinstance(template, (hou.FloatParmTemplate, hou.IntParmTemplate, hou.StringParmTemplate)):
+                raise ValueError("Unsupported HDA parameter template: %s" % template.type().name())
+            target_name = promotion["name"]
+            if group.find(target_name) is not None or target_name in planned_names:
+                raise ValueError("HDA interface parameter already exists: %s" % target_name)
+            planned_names.add(target_name)
+            validated.append({
+                "source_node": source.path(),
+                "source_parameter": source_tuple.name(),
+                "name": target_name,
+                "label": promotion.get("label") or template.label(),
+                "folder": promotion.get("folder"),
+                "type": template.type().name(),
+                "size": len(source_tuple),
+            })
+        return definition, validated
+
+    def apply_hda_interface_patch(self, path, promotions, dry_run=True, plan_id=None, expected_revision=None, idempotency_key=None):
+        if idempotency_key and idempotency_key in self._completed_operations:
+            return self._completed_operations[idempotency_key]
+        instance = self._resolve_node(path)
+        definition, validated = self._validate_hda_promotions(instance, promotions)
+        revision = self._definition_revision(definition)
+        plan_payload = {"path": instance.path(), "promotions": validated, "definition_revision": revision}
+        computed_plan_id = hashlib.sha256(json.dumps(plan_payload, sort_keys=True).encode("utf-8")).hexdigest()
+        if dry_run:
+            self._plans[computed_plan_id] = plan_payload
+            return {
+                "dry_run": True,
+                "plan_id": computed_plan_id,
+                "definition_id": self._definition_id(definition),
+                "expected_revision": revision,
+                "promotions": validated,
+            }
+        if not plan_id or plan_id != computed_plan_id or plan_id not in self._plans:
+            raise ValueError("Apply requires the matching dry-run plan_id")
+        if not expected_revision or expected_revision != revision:
+            raise ValueError("HDA definition revision mismatch; current revision is %s" % revision)
+        if not idempotency_key:
+            raise ValueError("Apply requires idempotency_key")
+        library_path = definition.libraryFilePath()
+        if not library_path or library_path == "Embedded" or not os.path.isfile(library_path):
+            raise ValueError("Interface patch MVP requires an external HDA library")
+        if not os.access(library_path, os.W_OK):
+            raise ValueError("HDA library is not writable: %s" % library_path)
+
+        backup_fd, backup_path = tempfile.mkstemp(prefix="houdini_mcp_hda_", suffix=".bak")
+        os.close(backup_fd)
+        shutil.copy2(library_path, backup_path)
+        try:
+            group = definition.parmTemplateGroup()
+            for promotion in validated:
+                source = self._resolve_node(promotion["source_node"])
+                template = copy.copy(source.parmTuple(promotion["source_parameter"]).parmTemplate())
+                template.setName(promotion["name"])
+                template.setLabel(promotion["label"])
+                self._append_hda_template(group, template, promotion.get("folder"))
+            definition.setParmTemplateGroup(group)
+            instance.matchCurrentDefinition()
+            instance.allowEditingOfContents()
+            for promotion in validated:
+                source = self._resolve_node(promotion["source_node"])
+                source_tuple = source.parmTuple(promotion["source_parameter"])
+                target_tuple = instance.parmTuple(promotion["name"])
+                if target_tuple is None:
+                    raise ValueError("Promoted interface parameter was not created: %s" % promotion["name"])
+                for source_parm, target_parm in zip(source_tuple, target_tuple):
+                    relative_node = source.relativePathTo(instance)
+                    source_parm.setExpression(
+                        'ch("%s/%s")' % (relative_node, target_parm.name()),
+                        language=hou.exprLanguage.Hscript,
+                    )
+            definition.updateFromNode(instance)
+            instance.matchCurrentDefinition()
+            cook = self._cook_and_report(instance)
+            if not cook["cooked"]:
+                raise ValueError("Patched HDA failed to cook: %s" % cook["errors"])
+            result = {
+                "operation_id": str(uuid.uuid4()),
+                "instance_path": instance.path(),
+                "definition_id": self._definition_id(definition),
+                "revision_token": self._definition_revision(definition),
+                "library_ref": library_path,
+                "library_sha256": self._file_hash(library_path),
+                "promotions": validated,
+                "cook": cook,
+                "rolled_back": False,
+                "rollback_complete": True,
+                "residual_changes": [],
+            }
+            self._completed_operations[idempotency_key] = result
+            self._plans.pop(plan_id, None)
+            return result
+        except Exception as exc:
+            residual = []
+            try:
+                shutil.copy2(backup_path, library_path)
+                hou.hda.reloadFile(library_path)
+                instance.matchCurrentDefinition()
+            except Exception as rollback_exc:
+                residual.append("library rollback: %s" % rollback_exc)
+            raise HoudiniOperationError(
+                "HDA interface patch failed: %s" % exc,
+                rolled_back=not residual,
+                rollback_complete=not residual,
+                residual_changes=residual,
+            )
+        finally:
+            try:
+                os.remove(backup_path)
+            except OSError:
+                pass
+
     def create_hda_from_subnetwork(self, path, type_name, label, library_path, description=None, promotions=None, dry_run=True, plan_id=None, expected_revision=None, idempotency_key=None, overwrite=False):
         if overwrite:
             raise ValueError("HDA MVP does not permit overwrite")
@@ -1140,7 +1286,7 @@ class HoudiniMCPServer:
                 template.setName(promotion["name"])
                 if promotion.get("label"):
                     template.setLabel(promotion["label"])
-                group.append(template)
+                self._append_hda_template(group, template, promotion.get("folder"))
             definition.setParmTemplateGroup(group)
             for promotion in normalized_promotions:
                 suffix = promotion["source_node"].split(path + "/", 1)[-1]
@@ -1650,6 +1796,207 @@ class HoudiniMCPServer:
         except Exception as e:
             traceback.print_exc()
             raise RuntimeError(f"Failed to assign material to {node_path}: {e}")
+
+    @staticmethod
+    def _usd_material_targets(prim):
+        bindings = []
+        for relationship in prim.GetRelationships():
+            name = relationship.GetName()
+            if not str(name).startswith("material:binding"):
+                continue
+            targets = [str(target) for target in relationship.GetTargets()]
+            if targets:
+                bindings.append({"relationship": str(name), "targets": targets})
+        return bindings
+
+    def get_material_assignments(self, path="/obj", recursive=True, offset=0, limit=100, max_assignments=10000):
+        root = self._resolve_node(path)
+        assignments = []
+        max_assignments = max(1, min(int(max_assignments), 100000))
+        scan_truncated = False
+        nodes = [root]
+        if recursive:
+            nodes.extend(root.allSubChildren())
+        for node in nodes:
+            if len(assignments) >= max_assignments:
+                scan_truncated = True
+                break
+            for parm in node.parms():
+                name = parm.name()
+                if not name.startswith("shop_materialpath"):
+                    continue
+                try:
+                    material_path = parm.evalAsString()
+                except (hou.Error, TypeError):
+                    continue
+                if not material_path:
+                    continue
+                group_parm = node.parm(name.replace("shop_materialpath", "group"))
+                try:
+                    group_value = group_parm.evalAsString() if group_parm else None
+                except (hou.Error, TypeError):
+                    group_value = None
+                assignments.append({
+                    "source": "parameter",
+                    "node": node.path(),
+                    "parameter": name,
+                    "material_path": material_path,
+                    "group": group_value,
+                })
+                if len(assignments) >= max_assignments:
+                    scan_truncated = True
+                    break
+
+        display_sop = None
+        if isinstance(root, hou.SopNode):
+            display_sop = root
+        else:
+            display_sop = getattr(root, "displayNode", lambda: None)()
+        if display_sop is not None:
+            try:
+                geometry = display_sop.geometry()
+                attribute = geometry.findPrimAttrib("shop_materialpath")
+                if attribute is not None:
+                    counts = {}
+                    for primitive in islice(geometry.prims(), 100000):
+                        material_path = primitive.attribValue(attribute)
+                        if material_path:
+                            counts[str(material_path)] = counts.get(str(material_path), 0) + 1
+                    for material_path, primitive_count in sorted(counts.items()):
+                        if len(assignments) >= max_assignments:
+                            scan_truncated = True
+                            break
+                        assignments.append({
+                            "source": "primitive_attribute",
+                            "node": display_sop.path(),
+                            "attribute": "shop_materialpath",
+                            "material_path": material_path,
+                            "primitive_count": primitive_count,
+                        })
+            except hou.Error:
+                pass
+
+        if hasattr(root, "stage"):
+            try:
+                stage = root.stage()
+                for prim in stage.Traverse():
+                    for binding in self._usd_material_targets(prim):
+                        if len(assignments) >= max_assignments:
+                            scan_truncated = True
+                            break
+                        assignments.append({
+                            "source": "usd_relationship",
+                            "prim_path": str(prim.GetPath()),
+                            **binding,
+                        })
+                    if scan_truncated:
+                        break
+            except (hou.Error, AttributeError, RuntimeError):
+                pass
+
+        assignments.sort(key=lambda item: (
+            item.get("node", item.get("prim_path", "")),
+            item.get("parameter", item.get("relationship", "")),
+            item.get("material_path", ""),
+        ))
+        page, meta = self._page(assignments, max(0, int(offset)), max(1, min(int(limit), 500)))
+        meta.update({"root": root.path(), "assignments": page, "scan_truncated": scan_truncated})
+        return meta
+
+    def get_stage_snapshot(self, path, prim_path="/", depth=2, include_materials=True, max_prims=500, max_bytes=524288):
+        node = self._resolve_node(path)
+        if not hasattr(node, "stage"):
+            raise ValueError("Node is not a LOP node and has no USD stage: %s" % path)
+        stage = node.stage()
+        if stage is None:
+            raise ValueError("LOP node returned no composed USD stage: %s" % path)
+        root = stage.GetPseudoRoot() if prim_path == "/" else stage.GetPrimAtPath(prim_path)
+        if not root or not root.IsValid():
+            raise ValueError("USD prim not found: %s" % prim_path)
+
+        max_prims = max(1, min(int(max_prims), 5000))
+        max_bytes = max(4096, min(int(max_bytes), 4194304))
+        max_depth = max(0, min(int(depth), 10))
+        queue = [(root, 0)]
+        prims = []
+        used_bytes = 2048
+        truncated = False
+        while queue and len(prims) < max_prims:
+            prim, level = queue.pop(0)
+            purpose_attr = prim.GetAttribute("purpose")
+            purpose = purpose_attr.Get() if purpose_attr else None
+            item = {
+                "path": str(prim.GetPath()),
+                "name": str(prim.GetName()),
+                "type": str(prim.GetTypeName()),
+                "depth": level,
+                "active": bool(prim.IsActive()),
+                "defined": bool(prim.IsDefined()),
+                "instanceable": bool(prim.IsInstanceable()),
+                "purpose": str(purpose) if purpose else None,
+                "kind": prim.GetMetadata("kind"),
+            }
+            if include_materials:
+                bindings = self._usd_material_targets(prim)
+                if bindings:
+                    item["material_bindings"] = bindings
+            encoded_size = len(json.dumps(item, sort_keys=True, default=str).encode("utf-8"))
+            if used_bytes + encoded_size > max_bytes:
+                truncated = True
+                break
+            prims.append(item)
+            used_bytes += encoded_size
+            if level < max_depth:
+                queue.extend((child, level + 1) for child in prim.GetChildren())
+        if queue:
+            truncated = True
+
+        layers = []
+        layers_truncated = False
+        for layer in islice(stage.GetUsedLayers(), 500):
+            layer_item = {
+                "identifier": str(layer.identifier),
+                "real_path": str(layer.realPath) if layer.realPath else None,
+                "anonymous": bool(layer.anonymous),
+                "dirty": bool(layer.dirty),
+            }
+            layer_size = len(json.dumps(layer_item, sort_keys=True).encode("utf-8"))
+            if used_bytes + layer_size > max_bytes:
+                layers_truncated = True
+                truncated = True
+                break
+            layers.append(layer_item)
+            used_bytes += layer_size
+        if len(stage.GetUsedLayers()) > len(layers):
+            layers_truncated = True
+            truncated = True
+        edit_layer = stage.GetEditTarget().GetLayer()
+        revision_payload = {
+            "node": node.path(),
+            "root_layer": str(stage.GetRootLayer().identifier),
+            "edit_target": str(edit_layer.identifier),
+            "layers": layers,
+            "layers_truncated": layers_truncated,
+            "prims": prims,
+        }
+        revision = hashlib.sha256(
+            json.dumps(revision_payload, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
+        return {
+            "node": node.path(),
+            "prim_root": str(root.GetPath()),
+            "prims": prims,
+            "count": len(prims),
+            "truncated": truncated,
+            "max_prims": max_prims,
+            "max_bytes": max_bytes,
+            "response_bytes": used_bytes,
+            "root_layer": str(stage.GetRootLayer().identifier),
+            "session_layer": str(stage.GetSessionLayer().identifier),
+            "edit_target": str(edit_layer.identifier),
+            "layers": layers,
+            "snapshot_revision": revision,
+        }
 
     # -------------------------------------------------------------------------
     # NEW OPUS Import Handler and Helpers
