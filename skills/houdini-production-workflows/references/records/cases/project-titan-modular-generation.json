@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "project-titan-modular-generation",
+  "title": "Project Titan modular and data-driven generators",
+  "status": "candidate",
+  "summary": "Building, platform, train, and advertisement assets separate data or outline inputs from modular placement, exceptional geometry, UV/material processing, and product output.",
+  "source": {
+    "kind": "mixed",
+    "locator": "TiTan Project/{Tutorial_Building_Generator,titan_platform_project_files,train_project_files,Houdini_ad_Board_files}",
+    "fingerprint": "bounded-inspection:2026-08-27",
+    "notes": "HDA interfaces, internal networks, JSON structure, and Sticky Notes were inspected under Houdini 21.0.440."
+  },
+  "environment": {
+    "houdini_versions": ["21.0.440"],
+    "sidefx_labs_versions": ["SideFX Labs 21.0 runtime"],
+    "engines": ["unreal"],
+    "license_modes": ["mixed/inspect-before-save"]
+  },
+  "scope": {
+    "workflows": ["modular-generation", "curve-instancing", "realtime-animation"],
+    "domains": ["sop", "kinefx", "data-driven", "game-engine"],
+    "projects": ["project-titan"]
+  },
+  "inputs": [
+    {"name": "outline or footprint", "domain": "Sop", "contract": "clean oriented outline with units and closure policy"},
+    {"name": "module or text data", "domain": "data", "contract": "versioned module/data-table/JSON schema with dimensions, identities, variants, and paths"}
+  ],
+  "observations": {
+    "node_count": 756,
+    "node_type_counts": {"labs::building_generator_utility::2.0": 6, "labs::instance_attributes::1.0": 3, "attribwrangle": 46, "attribcreate::2.0": 38, "kinefx::skeleton": 1},
+    "top_nodes": ["building pattern expansion", "platform corner classification", "train multiparm pattern assembly", "advertisement JSON-to-attributes"],
+    "external_references": ["SideFX Labs", "Unreal Data Tables and StaticMesh paths", "Stores_Data_structure.json"],
+    "sticky_notes": ["Pattern logic: angle brackets repeat and square brackets do once", "By using xform attributes you can save rotated models original position", "Loop over multi-parameter", "With Python the JSON file gets imported into points and attributes"],
+    "stages": ["validate data schema", "normalize modules", "classify placement domain", "expand pattern", "place proxies or instances", "build exceptional geometry", "UV/material/export"],
+    "contracts": ["module_name", "module_dimension", "module_priority", "variant", "unreal_instance", "unreal_material", "rest_transform"],
+    "limitations": ["Building Data Table schema is tutorial-specific", "Advertisement JSON path is absolute", "Unreal paths and pattern ordering are project/version conventions", "No final Unreal acceptance was run"]
+  },
+  "outputs": [
+    {"product": "modular_instances", "path_contract": "named HDA output", "attributes": ["orient", "scale", "unreal_instance"]},
+    {"product": "unique_geometry", "path_contract": "named HDA output", "attributes": ["uv", "unreal_material"]},
+    {"product": "skinned_train", "path_contract": "Skinned_Mesh and Rig outputs", "attributes": ["name", "parent", "rest_transform"]}
+  ],
+  "acceptance": {"verified": false, "checks": ["schema compatibility", "pattern termination", "module coverage", "output separation", "engine import"], "evidence": []},
+  "provenance": {"created_at": "2026-08-27T00:00:00Z", "created_by": "Codex bounded Houdini inspection", "supersedes": ""},
+  "tags": ["project-titan", "building", "modules", "data-driven", "game-content"]
+}

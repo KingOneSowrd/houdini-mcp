@@ -513,6 +513,19 @@ Skill 和模板 HIP 是生产工作流层，不替代 MCP 底层能力：
 - **Skill** 描述任务规划、能力调用顺序、失败分支、恢复策略和验收标准。
 - **模板 HIP** 提供稳定的网络上下文、输出目录、颜色管理、灯光、相机、渲染设置和命名约定。
 
+### 经验工作流系统基础 v1
+
+- [x] 建立 `houdini-production-workflows` 主 Skill，以渐进式披露方式路由八类生产工作流
+- [x] 建立宪章、MCP 协作边界、几何契约、验收规则和经验晋升生命周期
+- [x] 建立 Case、Recipe、Experience、Template Manifest 的严格机器可读 Schema
+- [x] 提供 Hython 只读案例摄取脚本，默认 Manual Update，禁止保存、Cook、Cache、Render 和 Export
+- [x] 提供记录校验、成熟度评估、候选 Experience 创建和索引重建 CLI
+- [x] 将 Project Titan 提炼为 5 个候选证据记录和 8 个候选工作流 Recipe
+- [x] 为记录严格校验、工作流引用、晋升证据和索引一致性增加单元测试
+- [ ] 在真实 MCP 制作任务结束时自动生成操作、修正、验收和产物 Experience Record
+- [ ] 基于多个独立案例和真实执行记录，将候选 Recipe 晋升为 validated/canonical
+- [ ] 为首个已验证 Recipe 制作带 Manifest、惰性 Cook 和 Hython Smoke Test 的模板 HIP
+
 ### 首批端到端案例
 
 - [ ] **程序化道具 → HDA → Turntable**

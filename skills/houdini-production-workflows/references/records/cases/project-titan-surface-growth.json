@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "project-titan-surface-growth",
+  "title": "Project Titan ivy and shrub growth",
+  "status": "candidate",
+  "summary": "Ivy and shrub HDAs convert prepared surfaces or shapes into deterministic growth paths, branch geometry, and late-bound foliage variants with engine material contracts.",
+  "source": {
+    "kind": "hda",
+    "locator": "TiTan Project/{ivy_project_files,shrub_project_files_VFWJHGn}",
+    "fingerprint": "bounded-inspection:2026-08-27",
+    "notes": "Both HDA definitions were expanded in a disposable Houdini session without cooking exports."
+  },
+  "environment": {
+    "houdini_versions": ["21.0.440"],
+    "sidefx_labs_versions": ["SideFX Labs 21.0 runtime"],
+    "engines": ["unreal"],
+    "license_modes": ["inspect-before-save"]
+  },
+  "scope": {
+    "workflows": ["surface-growth"],
+    "domains": ["sop", "foliage", "game-engine"],
+    "projects": ["project-titan"]
+  },
+  "inputs": [
+    {"name": "growth shape", "domain": "Sop", "contract": "surface or volume with explicit growth region, scale, and normal policy"}
+  ],
+  "observations": {
+    "node_count": 151,
+    "node_type_counts": {"findshortestpath": 2, "resample": 6, "copytopoints::2.0": 4, "labs::random_selection::1.0": 8, "attribcreate::2.0": 8},
+    "top_nodes": ["surface remesh and masks", "shortest-path branch curves", "branch sweep", "leaf instance points"],
+    "external_references": ["project-scoped Unreal foliage materials"],
+    "sticky_notes": ["Define the area of ivy", "Creating and finding path for branches to grow", "Define where the leaves are and rotation"],
+    "stages": ["prepare input", "select growth starts and targets", "solve branch paths", "build branch geometry", "scatter foliage variants", "assign materials"],
+    "contracts": ["variant", "orient", "pscale", "unreal_material", "deterministic seed"],
+    "limitations": ["Leaf atlas sources are project choices", "Hard-coded Unreal materials must not be generalized", "Hierarchy was not engine-validated"]
+  },
+  "outputs": [
+    {"product": "branch_geometry", "path_contract": "named HDA output", "attributes": ["unreal_material"]},
+    {"product": "foliage_instances", "path_contract": "named HDA output", "attributes": ["orient", "pscale", "variant"]}
+  ],
+  "acceptance": {"verified": false, "checks": ["growth region adherence", "path connectivity", "instance budget", "engine material validity"], "evidence": []},
+  "provenance": {"created_at": "2026-08-27T00:00:00Z", "created_by": "Codex bounded Houdini inspection", "supersedes": ""},
+  "tags": ["project-titan", "foliage", "growth", "game-content"]
+}

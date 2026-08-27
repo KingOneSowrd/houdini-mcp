@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "houdini-template-manifest-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "template_id", "template_version", "hip_path", "workflow", "compatibility", "entry_nodes", "output_nodes", "expensive_nodes", "write_nodes", "safe_on_load", "contracts", "acceptance"],
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [1]},
+    "record_type": {"type": "string", "enum": ["template_manifest"]},
+    "template_id": {"type": "string"},
+    "template_version": {"type": "integer"},
+    "hip_path": {"type": "string"},
+    "workflow": {"type": "string"},
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["houdini", "sidefx_labs", "engines"],
+      "properties": {
+        "houdini": {"type": "array", "items": {"type": "string"}},
+        "sidefx_labs": {"type": "array", "items": {"type": "string"}},
+        "engines": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "entry_nodes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "output_nodes": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "expensive_nodes": {"type": "array", "items": {"type": "string"}},
+    "write_nodes": {"type": "array", "items": {"type": "string"}},
+    "safe_on_load": {"type": "boolean", "enum": [true]},
+    "contracts": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "acceptance": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+  }
+}

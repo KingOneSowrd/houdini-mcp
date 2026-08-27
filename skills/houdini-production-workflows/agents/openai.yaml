@@ -1,0 +1,4 @@
+interface:
+  display_name: "Houdini Production Workflows"
+  short_description: "Build and validate production Houdini workflows"
+  default_prompt: "Use $houdini-production-workflows to plan and execute this Houdini production task through Houdini MCP."

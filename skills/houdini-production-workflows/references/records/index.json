@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "project-titan-curve-modules",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/project-titan-curve-modules.json"
+    },
+    {
+      "id": "project-titan-modular-generation",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/project-titan-modular-generation.json"
+    },
+    {
+      "id": "project-titan-realtime-export",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/project-titan-realtime-export.json"
+    },
+    {
+      "id": "project-titan-simulation-bake",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/project-titan-simulation-bake.json"
+    },
+    {
+      "id": "project-titan-surface-growth",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/project-titan-surface-growth.json"
+    },
+    {
+      "id": "curve-instancing-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "curve-instancing",
+      "path": "records/recipes/curve-instancing-v1.json"
+    },
+    {
+      "id": "modular-generation-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "modular-generation",
+      "path": "records/recipes/modular-generation-v1.json"
+    },
+    {
+      "id": "pivot-painter-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "pivot-painter",
+      "path": "records/recipes/pivot-painter-v1.json"
+    },
+    {
+      "id": "pyro-flipbook-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "pyro-flipbook",
+      "path": "records/recipes/pyro-flipbook-v1.json"
+    },
+    {
+      "id": "rbd-destruction-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "rbd-destruction",
+      "path": "records/recipes/rbd-destruction-v1.json"
+    },
+    {
+      "id": "realtime-animation-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "realtime-animation",
+      "path": "records/recipes/realtime-animation-v1.json"
+    },
+    {
+      "id": "surface-growth-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "surface-growth",
+      "path": "records/recipes/surface-growth-v1.json"
+    },
+    {
+      "id": "vellum-settle-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "vellum-settle",
+      "path": "records/recipes/vellum-settle-v1.json"
+    }
+  ]
+}

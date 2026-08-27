@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "rbd-destruction-v1",
+  "title": "RBD destruction, stacking, cache, and product split",
+  "status": "candidate",
+  "workflow": "rbd-destruction",
+  "summary": "Prepare material-specific packed pieces and constraints, prove behavior with a bounded Bullet preview, cache an approved simulation, and reconstruct engine products.",
+  "applicability": {"use_when": ["fracture, constraint destruction, or physics-assisted stacking is the dominant stage"], "avoid_when": ["a static deterministic layout is sufficient"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["render and proxy geometry with unique identity and material strategy", "constraints/activation policy", "scale, frame, cache, and output contracts"],
+  "stages": ["DISCOVER identity and product contracts", "separate material strategies", "fracture or prepare variants", "pack and assign properties", "build and validate constraints/proxies", "run bounded Bullet preview", "run approved simulation", "write versioned cache", "reconstruct and split products", "optional VAT and verification"],
+  "outputs": ["versioned simulation cache", "render geometry products", "optional VAT-ready products and collision"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": true, "file_write": true, "external_asset_write": false},
+  "acceptance": ["piece and constraint identity pass", "preview proves scale and behavior", "cache is complete and revision-matched", "reconstructed products preserve materials and transforms"],
+  "rollback": ["retain pre-fracture source", "write new cache versions", "preserve previous artifact manifest"],
+  "evidence": {"case_ids": ["project-titan-simulation-bake", "project-titan-realtime-export"], "experience_ids": [], "last_verified": ""},
+  "tags": ["rbd", "bullet", "destruction", "cache"]
+}

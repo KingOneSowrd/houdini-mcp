@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "workflows": [
+    {
+      "id": "curve-instancing",
+      "reference": "workflows/curve-instancing.md",
+      "signals": ["curve", "fence", "rail", "cable", "road", "path", "instance", "resample", "orientalongcurve"]
+    },
+    {
+      "id": "surface-growth",
+      "reference": "workflows/surface-growth.md",
+      "signals": ["ivy", "shrub", "branch", "foliage", "growth", "surface", "shortestpath", "leaf"]
+    },
+    {
+      "id": "modular-generation",
+      "reference": "workflows/modular-generation.md",
+      "signals": ["building", "module", "pattern", "datatable", "platform", "footprint", "kitbash"]
+    },
+    {
+      "id": "vellum-settle",
+      "reference": "workflows/vellum-settle.md",
+      "signals": ["vellum", "cloth", "relax", "settle", "pin", "collision"]
+    },
+    {
+      "id": "rbd-destruction",
+      "reference": "workflows/rbd-destruction.md",
+      "signals": ["rbd", "bullet", "fracture", "constraint", "destruction", "stacking", "packed"]
+    },
+    {
+      "id": "pyro-flipbook",
+      "reference": "workflows/pyro-flipbook.md",
+      "signals": ["pyro", "smoke", "density", "temperature", "burn", "flipbook", "volume"]
+    },
+    {
+      "id": "realtime-animation",
+      "reference": "workflows/realtime-animation.md",
+      "signals": ["vat", "vertex animation", "kinefx", "fbx", "character", "skeleton", "bone", "animation"]
+    },
+    {
+      "id": "pivot-painter",
+      "reference": "workflows/pivot-painter.md",
+      "signals": ["pivot painter", "pivotpainter", "hierarchy", "tree", "parent index", "wind"]
+    }
+  ]
+}

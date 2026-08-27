@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "project-titan-realtime-export",
+  "title": "Project Titan VAT and Pivot Painter exports",
+  "status": "candidate",
+  "summary": "Character VAT, destruction VAT, and tree Pivot Painter scenes show that engine animation products require synchronized geometry, textures, metadata, hierarchy, and frame contracts rather than a mesh-only export.",
+  "source": {
+    "kind": "hip",
+    "locator": "TiTan Project/{Vat_Chararcter_Tutorial_Source,Tree_PivotPainter_Tutorial_Source,project_titan_train_destructionfx}",
+    "fingerprint": "bounded-inspection:2026-08-27",
+    "notes": "Main HIPs, export node interfaces, notes, and existing artifacts were inspected without producing new files."
+  },
+  "environment": {
+    "houdini_versions": ["21.0.440"],
+    "sidefx_labs_versions": ["SideFX Labs 21.0 runtime"],
+    "engines": ["unreal", "unity"],
+    "license_modes": ["inspect-before-save"]
+  },
+  "scope": {
+    "workflows": ["realtime-animation", "pivot-painter", "rbd-destruction"],
+    "domains": ["kinefx", "sop", "cop", "rop", "game-engine"],
+    "projects": ["project-titan"]
+  },
+  "inputs": [
+    {"name": "animated geometry or hierarchy", "domain": "Sop", "contract": "stable identity, explicit FPS/range, engine axes, and mode-compatible topology/hierarchy"}
+  ],
+  "observations": {
+    "node_count": 14044,
+    "node_type_counts": {"labs::vertex_animation_textures::3.0": 4, "kinefx::fbxcharacterimport": 2, "unreal_pivotpainter": 4, "filmboxfbx": 4},
+    "top_nodes": ["FBX character import and bonedeform", "shared first-frame switch", "per-clip VAT ROPs", "tree hierarchy generation", "Pivot Painter data packing"],
+    "external_references": ["$HIP/export", "SideFX Labs", "engine shader/material data"],
+    "sticky_notes": ["The first frame needs the exact same mesh position when sharing one mesh", "Build hierarchy attributes on the tree", "Export Pivot Painter geometry and textures", "Animatable hierarchy elements have a tool-version limit"],
+    "stages": ["source import", "identity/topology/hierarchy validation", "clip or level separation", "data packing", "mesh/texture/JSON export", "engine verification"],
+    "contracts": ["stable point order", "FPS", "clip range", "rest pose", "hierarchy parent", "pivot basis", "texture dimensions", "artifact revision"],
+    "limitations": ["Embedded Labs nodes cause very large graph counts", "The inspected examples use older exporter versions", "No Unreal runtime playback test was performed", "Element limits are exporter-version specific"]
+  },
+  "outputs": [
+    {"product": "vat_bundle", "path_contract": "$HIP/export/<clip-or-material>/<version>", "attributes": ["mesh", "position texture", "rotation texture", "data JSON", "material data"]},
+    {"product": "pivot_painter_bundle", "path_contract": "$HIP/export/<tree>/<version>", "attributes": ["mesh", "hierarchy textures", "material contract"]}
+  ],
+  "acceptance": {"verified": false, "checks": ["topology or hierarchy contract", "texture limits", "artifact revision consistency", "engine playback"], "evidence": []},
+  "provenance": {"created_at": "2026-08-27T00:00:00Z", "created_by": "Codex bounded Houdini inspection", "supersedes": ""},
+  "tags": ["project-titan", "vat", "pivot-painter", "realtime"]
+}

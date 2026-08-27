@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "modular-generation-v1",
+  "title": "Modular and data-driven generation",
+  "status": "candidate",
+  "workflow": "modular-generation",
+  "summary": "Expand a versioned pattern or data schema over validated outlines and module metadata, using proxy placement before exceptional geometry and engine packaging.",
+  "applicability": {"use_when": ["footprints, patterns, module kits, or data tables drive assembly"], "avoid_when": ["the input schema is unknown and cannot be inspected"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["clean outline or placement domain", "versioned module metadata and pattern/data schema", "project engine profile"],
+  "stages": ["DISCOVER schemas and conventions", "normalize modules and units", "classify placement regions", "expand pattern deterministically", "place proxy instances", "resolve remainder/corner policy", "build exceptional geometry", "UV/material/collision packaging", "verify products"],
+  "outputs": ["module instances", "unique render geometry", "collision and metadata products as requested"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": false, "file_write": false, "external_asset_write": false},
+  "acceptance": ["pattern expansion terminates", "all modules and paths validate", "coverage and corner rules pass", "instances and unique geometry remain separated"],
+  "rollback": ["preserve source data and outline", "remove or undo only the namespaced generator network"],
+  "evidence": {"case_ids": ["project-titan-modular-generation"], "experience_ids": [], "last_verified": ""},
+  "tags": ["modules", "building", "data-driven", "pcg"]
+}

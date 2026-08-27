@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "houdini-production-experience-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "id", "status", "workflow", "goal", "created_at", "environment", "inputs", "decisions", "operations", "corrections", "outputs", "acceptance", "provenance", "tags"],
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [1]},
+    "record_type": {"type": "string", "enum": ["experience"]},
+    "id": {"type": "string"},
+    "status": {"type": "string", "enum": ["candidate", "validated", "canonical", "deprecated"]},
+    "workflow": {"type": "string"},
+    "goal": {"type": "string"},
+    "created_at": {"type": "string"},
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["houdini", "sidefx_labs", "engine", "project", "hip"],
+      "properties": {
+        "houdini": {"type": "string"},
+        "sidefx_labs": {"type": "string"},
+        "engine": {"type": "string"},
+        "project": {"type": "string"},
+        "hip": {"type": "string"}
+      }
+    },
+    "inputs": {"type": "array", "items": {"type": "string"}},
+    "decisions": {"type": "array", "items": {"type": "string"}},
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "effect_scope", "result", "revision"],
+        "properties": {
+          "capability": {"type": "string"},
+          "effect_scope": {"type": "string"},
+          "result": {"type": "string"},
+          "revision": {"type": "string"}
+        }
+      }
+    },
+    "corrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["request", "classification", "resolution", "outcome"],
+        "properties": {
+          "request": {"type": "string"},
+          "classification": {"type": "string", "enum": ["houdini_invariant", "engine_convention", "project_convention", "version_workaround", "tool_defect", "artistic_preference", "one_off_asset"]},
+          "resolution": {"type": "string"},
+          "outcome": {"type": "string"}
+        }
+      }
+    },
+    "outputs": {"type": "array", "items": {"type": "string"}},
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failed", "skipped", "metrics"],
+      "properties": {
+        "passed": {"type": "array", "items": {"type": "string"}},
+        "failed": {"type": "array", "items": {"type": "string"}},
+        "skipped": {"type": "array", "items": {"type": "string"}},
+        "metrics": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recipe_id", "case_ids", "created_by", "supersedes"],
+      "properties": {
+        "recipe_id": {"type": "string"},
+        "case_ids": {"type": "array", "items": {"type": "string"}},
+        "created_by": {"type": "string"},
+        "supersedes": {"type": "string"}
+      }
+    },
+    "tags": {"type": "array", "items": {"type": "string"}}
+  }
+}

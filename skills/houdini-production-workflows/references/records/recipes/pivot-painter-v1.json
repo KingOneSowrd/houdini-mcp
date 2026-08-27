@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "pivot-painter-v1",
+  "title": "Hierarchy and Pivot Painter packaging",
+  "status": "candidate",
+  "workflow": "pivot-painter",
+  "summary": "Build or validate deterministic piece hierarchy and local pivots, pack exporter-version-compatible data, and verify synchronized geometry and textures.",
+  "applicability": {"use_when": ["hierarchical rigid-part or vegetation deformation is driven by a game shader"], "avoid_when": ["skeletal animation is the required runtime representation"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["clean pieces with deterministic identity", "hierarchy/pivot policy", "exporter and engine profile with element limits"],
+  "stages": ["DISCOVER exporter compatibility", "prepare piece identity", "derive or validate hierarchy", "generate pivots and local bases", "validate acyclic deterministic indices", "pack data", "export new mesh/texture version", "verify engine bundle"],
+  "outputs": ["Pivot Painter mesh", "hierarchy/pivot textures", "material/shader contract", "artifact manifest"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": true, "file_write": true, "external_asset_write": false},
+  "acceptance": ["hierarchy is acyclic and complete", "pivots and local bases are finite", "element and texture limits pass", "mesh and textures share one hierarchy revision"],
+  "rollback": ["preserve source pieces and hierarchy", "export to a new versioned directory"],
+  "evidence": {"case_ids": ["project-titan-realtime-export"], "experience_ids": [], "last_verified": ""},
+  "tags": ["pivot-painter", "hierarchy", "vegetation", "realtime"]
+}

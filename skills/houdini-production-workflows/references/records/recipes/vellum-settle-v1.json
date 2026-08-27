@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "vellum-settle-v1",
+  "title": "Vellum preview, settle, and freeze",
+  "status": "candidate",
+  "workflow": "vellum-settle",
+  "summary": "Use a bounded preview-first Vellum stage to settle cloth or cables, then freeze or cache a validated result before game optimization.",
+  "applicability": {"use_when": ["flexible geometry needs a physically settled result"], "avoid_when": ["a direct deformation produces the required result", "a live simulation was not requested"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["source topology and rest-state contract", "pin and collision products", "frame, scale, solver, and output policy"],
+  "stages": ["DISCOVER solver and product contracts", "prepare/remesh source", "validate pins and collisions", "run bounded preview", "inspect stability and intersections", "run approved-quality range", "postprocess", "freeze or cache", "optimize and verify"],
+  "outputs": ["validated frozen geometry or versioned animation cache", "optimized game geometry with preserved UV/material groups"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": true, "file_write": true, "external_asset_write": false},
+  "acceptance": ["preview passes before quality cook", "chosen frame or cache range is stable", "intersections remain within tolerance", "optimization and material contracts pass"],
+  "rollback": ["retain the pre-simulation branch", "write caches to a new version", "never overwrite the source HIP implicitly"],
+  "evidence": {"case_ids": ["project-titan-curve-modules", "project-titan-simulation-bake"], "experience_ids": [], "last_verified": ""},
+  "tags": ["vellum", "simulation", "game-content"]
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "project-titan-simulation-bake",
+  "title": "Project Titan simulation-to-product workflows",
+  "status": "candidate",
+  "summary": "Cable, cloth, stacking, smoke, and train destruction treat simulation as a bounded production stage followed by a frozen frame, versioned cache, flipbook, or VAT product.",
+  "source": {
+    "kind": "mixed",
+    "locator": "TiTan Project/{cable_tool_project_files,Tutorial_cloth_tool,titan_stacking_tool_project_files,Pyro_Smoke_Tutorial,project_titan_train_destructionfx}",
+    "fingerprint": "bounded-inspection:2026-08-27",
+    "notes": "Solver networks, interfaces, file references, cache layout, and output ROPs were inspected without launching new simulations or exports."
+  },
+  "environment": {
+    "houdini_versions": ["21.0.440"],
+    "sidefx_labs_versions": ["SideFX Labs 21.0 runtime"],
+    "engines": ["unreal", "unity"],
+    "license_modes": ["mixed/inspect-before-save"]
+  },
+  "scope": {
+    "workflows": ["vellum-settle", "rbd-destruction", "pyro-flipbook", "realtime-animation"],
+    "domains": ["vellum", "dop", "pyro", "rbd", "cop", "game-engine"],
+    "projects": ["project-titan"]
+  },
+  "inputs": [
+    {"name": "simulation source", "domain": "Sop", "contract": "validated topology, scale, identity, constraints/pins/collision, and frame policy"}
+  ],
+  "observations": {
+    "node_count": 9140,
+    "node_type_counts": {"vellumsolver": 4, "rbdbulletsolver": 5, "pyrosolver": 2, "filecache::2.0": 1, "labs::vertex_animation_textures::3.0": 2},
+    "top_nodes": ["Vellum configure/solve/postprocess/timeshift", "Bullet prepare/solve/filecache", "Pyro source/solve/loop/bake/flipbook", "metal and glass VAT outputs"],
+    "external_references": ["$HIP/geo cache sequences", "$HIP/export VAT products", "SideFX Labs"],
+    "sticky_notes": ["Timeshift forces the result at a specific frame", "Remesh can increase cloth quality and polygon cost", "ROP network holds the flipbook node", "Export simulations to Vertex Animation Textures"],
+    "stages": ["source validation", "proxy and constraint preparation", "preview simulation", "quality simulation", "freeze or cache", "postprocess and product split", "bake or VAT export", "artifact verification"],
+    "contracts": ["name", "active", "constraint identity", "stable frame range", "cache revision", "VAT topology", "flipbook packing"],
+    "limitations": ["Expanded stock solver internals dominate node counts", "Existing caches were inspected but not regenerated", "Some assets triggered license-mode warnings", "Artifact provenance is not encoded in the original project"]
+  },
+  "outputs": [
+    {"product": "frozen_geometry", "path_contract": "named HDA output at an explicit stable frame", "attributes": ["uv", "unreal_material"]},
+    {"product": "simulation_cache", "path_contract": "$HIP/geo/<version>/<name>.$F.bgeo.sc", "attributes": ["name", "transform"]},
+    {"product": "flipbook_or_vat", "path_contract": "$HIP/export/<product>/<version>", "attributes": ["artifact manifest required"]}
+  ],
+  "acceptance": {"verified": false, "checks": ["preview stability", "cache completeness", "source revision match", "artifact set integrity", "engine playback"], "evidence": []},
+  "provenance": {"created_at": "2026-08-27T00:00:00Z", "created_by": "Codex bounded Houdini inspection", "supersedes": ""},
+  "tags": ["project-titan", "simulation", "cache", "vat", "flipbook"]
+}

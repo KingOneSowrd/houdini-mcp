@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "pyro-flipbook-v1",
+  "title": "Pyro preview, loop, bake, and flipbook",
+  "status": "candidate",
+  "workflow": "pyro-flipbook",
+  "summary": "Turn explicit source fields into a bounded sparse Pyro simulation, optionally create a validated loop, and package a channel-defined engine flipbook.",
+  "applicability": {"use_when": ["smoke or fire must become a volume cache or flipbook"], "avoid_when": ["a scene render rather than an engine texture is the requested product"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["source fields and bounds", "voxel/memory/time budget", "capture camera, channel packing, and texture contract"],
+  "stages": ["DISCOVER source and artifact contracts", "prepare and rasterize source", "run low-resolution sparse preview", "validate bounds and motion", "run approved simulation/cache", "build optional loop", "bake look fields", "preview capture channels", "render flipbook", "verify textures and metadata"],
+  "outputs": ["versioned volume cache when requested", "flipbook textures", "engine metadata/material contract"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": true, "file_write": true, "external_asset_write": false},
+  "acceptance": ["fields and bounds pass", "voxel and time budgets pass", "loop tolerance passes when requested", "all channels, tiles, metadata, and color-space settings validate"],
+  "rollback": ["retain source and low-resolution preview", "write simulation and flipbook to new versions"],
+  "evidence": {"case_ids": ["project-titan-simulation-bake"], "experience_ids": [], "last_verified": ""},
+  "tags": ["pyro", "flipbook", "simulation", "game-content"]
+}

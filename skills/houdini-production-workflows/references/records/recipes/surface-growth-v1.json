@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "surface-growth-v1",
+  "title": "Surface growth and foliage generation",
+  "status": "candidate",
+  "workflow": "surface-growth",
+  "summary": "Derive branch paths from a bounded surface or shape, preserve deterministic growth identity, and generate branch geometry plus late-bound foliage instances.",
+  "applicability": {"use_when": ["the requested form requires growth paths or branch hierarchy"], "avoid_when": ["ordinary scatter is sufficient"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["prepared growth surface with masks, scale, normals, and obstacle policy", "optional foliage/module profile"],
+  "stages": ["DISCOVER surface and output contracts", "prepare bounded growth domain", "select deterministic starts and targets", "solve and clean paths", "construct branch curves and mesh", "generate foliage point variants", "apply engine/material contracts", "verify hierarchy and budgets"],
+  "outputs": ["authoritative branch curves", "branch render geometry", "foliage instance points", "optional animation hierarchy"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": false, "file_write": false, "external_asset_write": false},
+  "acceptance": ["paths remain in the allowed region", "branch identity and hierarchy are deterministic", "instance and polygon budgets pass", "engine paths resolve"],
+  "rollback": ["one graph Undo group when supported", "preserve the original input and masks"],
+  "evidence": {"case_ids": ["project-titan-surface-growth"], "experience_ids": [], "last_verified": ""},
+  "tags": ["foliage", "growth", "pcg"]
+}

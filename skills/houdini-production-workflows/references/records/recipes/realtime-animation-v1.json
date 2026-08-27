@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "realtime-animation-v1",
+  "title": "KineFX or VAT real-time animation packaging",
+  "status": "candidate",
+  "workflow": "realtime-animation",
+  "summary": "Validate identity, rest pose, topology, clip ranges, and engine profile before producing a synchronized skeletal or VAT artifact bundle.",
+  "applicability": {"use_when": ["animated geometry must play through bones or VAT in a game engine"], "avoid_when": ["the deliverable is only a Houdini cache or offline render"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["animated geometry/skeleton with explicit identity and topology policy", "FPS, ranges, clips, units, axes, and engine exporter profile"],
+  "stages": ["DISCOVER source and exporter capabilities", "inspect rest pose/topology/identity", "normalize units and axes", "isolate clips or products", "preview deformation", "select skeletal or VAT mode", "validate texture/point limits", "export new version", "verify synchronized artifacts"],
+  "outputs": ["skeletal FBX or VAT mesh", "VAT textures when applicable", "JSON/material/shader data", "artifact manifest"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": true, "file_write": true, "external_asset_write": false},
+  "acceptance": ["rest pose or VAT topology contract passes", "FPS and clip ranges match", "texture and point limits pass", "all artifacts share one source revision", "engine playback evidence is recorded when required"],
+  "rollback": ["preserve imported source", "export to a new versioned directory", "retain previous artifact manifest"],
+  "evidence": {"case_ids": ["project-titan-modular-generation", "project-titan-realtime-export"], "experience_ids": [], "last_verified": ""},
+  "tags": ["kinefx", "fbx", "vat", "realtime"]
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "houdini-production-case-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "id", "title", "status", "summary", "source", "environment", "scope", "inputs", "observations", "outputs", "acceptance", "provenance", "tags"],
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [1]},
+    "record_type": {"type": "string", "enum": ["case"]},
+    "id": {"type": "string"},
+    "title": {"type": "string"},
+    "status": {"type": "string", "enum": ["candidate", "validated", "canonical", "deprecated"]},
+    "summary": {"type": "string"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "fingerprint", "notes"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["hip", "hda", "tutorial", "production", "failure", "mixed"]},
+        "locator": {"type": "string"},
+        "fingerprint": {"type": "string"},
+        "notes": {"type": "string"}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["houdini_versions", "sidefx_labs_versions", "engines", "license_modes"],
+      "properties": {
+        "houdini_versions": {"type": "array", "items": {"type": "string"}},
+        "sidefx_labs_versions": {"type": "array", "items": {"type": "string"}},
+        "engines": {"type": "array", "items": {"type": "string"}},
+        "license_modes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflows", "domains", "projects"],
+      "properties": {
+        "workflows": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "domains": {"type": "array", "items": {"type": "string"}},
+        "projects": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "domain", "contract"],
+        "properties": {
+          "name": {"type": "string"},
+          "domain": {"type": "string"},
+          "contract": {"type": "string"}
+        }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node_count", "node_type_counts", "top_nodes", "external_references", "sticky_notes", "stages", "contracts", "limitations"],
+      "properties": {
+        "node_count": {"type": "integer"},
+        "node_type_counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "top_nodes": {"type": "array", "items": {"type": "string"}},
+        "external_references": {"type": "array", "items": {"type": "string"}},
+        "sticky_notes": {"type": "array", "items": {"type": "string"}},
+        "stages": {"type": "array", "items": {"type": "string"}},
+        "contracts": {"type": "array", "items": {"type": "string"}},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["product", "path_contract", "attributes"],
+        "properties": {
+          "product": {"type": "string"},
+          "path_contract": {"type": "string"},
+          "attributes": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verified", "checks", "evidence"],
+      "properties": {
+        "verified": {"type": "boolean"},
+        "checks": {"type": "array", "items": {"type": "string"}},
+        "evidence": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created_at", "created_by", "supersedes"],
+      "properties": {
+        "created_at": {"type": "string"},
+        "created_by": {"type": "string"},
+        "supersedes": {"type": "string"}
+      }
+    },
+    "tags": {"type": "array", "items": {"type": "string"}}
+  }
+}

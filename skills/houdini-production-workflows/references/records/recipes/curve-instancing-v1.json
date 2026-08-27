@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "curve-instancing-v1",
+  "title": "Curve-driven modular instancing",
+  "status": "candidate",
+  "workflow": "curve-instancing",
+  "summary": "Create deterministic point instances or swept geometry along validated curves while separating corners, variants, preview, and engine output.",
+  "applicability": {"use_when": ["a curve or path drives repeated modules or cables"], "avoid_when": ["the task is unconstrained surface scattering", "the result is a unique sculpted mesh"]},
+  "scope": {"houdini_versions": ["live-discovered"], "engines": ["profile-driven"], "projects": []},
+  "inputs": ["validated curves with direction, units, closure, and corner policy", "module metadata with dimensions, pivots, variants, and optional engine paths"],
+  "stages": ["DISCOVER input and module contracts", "clean and measure curves", "classify spans, corners, and endpoints", "create deterministic orientation/scale/variant points", "validate proxy coverage", "instance or sweep final products", "apply UV/material/collision contracts", "verify outputs"],
+  "outputs": ["instance points with finite transforms and valid paths", "optional packed or render geometry", "optional collision product"],
+  "side_effects": {"scene_mutation": true, "expensive_cook": false, "file_write": false, "external_asset_write": false},
+  "acceptance": ["stable seed and repeatable instance count", "gap/overlap and corner policy pass", "engine attributes and paths validate", "product budgets pass"],
+  "rollback": ["one graph Undo group when supported", "remove only the newly created namespaced network"],
+  "evidence": {"case_ids": ["project-titan-curve-modules"], "experience_ids": [], "last_verified": ""},
+  "tags": ["curve", "pcg", "instancing"]
+}

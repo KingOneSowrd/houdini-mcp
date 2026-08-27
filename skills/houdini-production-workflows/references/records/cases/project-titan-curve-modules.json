@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "project-titan-curve-modules",
+  "title": "Project Titan curve-driven modules",
+  "status": "candidate",
+  "summary": "Cable, fence, and rail assets use curves as semantic inputs, classify/resample spans, generate orientation and scale, and defer full geometry or engine instances until layout is stable.",
+  "source": {
+    "kind": "mixed",
+    "locator": "TiTan Project/{cable_tool_project_files,titan_fence_project_files,Tutorial_Rail_Source}",
+    "fingerprint": "bounded-inspection:2026-08-27",
+    "notes": "HDA definitions and the cable setup HIP were inspected under Houdini 21.0.440 without export."
+  },
+  "environment": {
+    "houdini_versions": ["21.0.440"],
+    "sidefx_labs_versions": ["SideFX Labs 21.0 runtime"],
+    "engines": ["unreal", "unity"],
+    "license_modes": ["mixed/inspect-before-save"]
+  },
+  "scope": {
+    "workflows": ["curve-instancing", "vellum-settle"],
+    "domains": ["sop", "vellum", "game-engine"],
+    "projects": ["project-titan"]
+  },
+  "inputs": [
+    {"name": "guide curves", "domain": "Sop", "contract": "one or more cleaned curves with known direction, units, and corner policy"}
+  ],
+  "observations": {
+    "node_count": 239,
+    "node_type_counts": {"resample": 12, "attribwrangle": 12, "orientalongcurve": 4, "labs::instance_attributes::1.0": 5, "vellumsolver": 2},
+    "top_nodes": ["Cable:resample/vellum/sweep", "Fence:corner split/instance attributes", "Rail:length classes/instance attributes"],
+    "external_references": ["SideFX Labs HDA library", "project-scoped Unreal material and asset paths"],
+    "sticky_notes": ["Input curve for the system", "Set instances for Unreal Engine", "Divide line into multiple pieces based on their sizes"],
+    "stages": ["curve preparation", "span and corner classification", "optional relaxation", "orientation and scale", "instance or sweep output", "UV and engine material"],
+    "contracts": ["orient", "N", "up", "pscale", "scale", "variant", "instancepath", "unreal_material"],
+    "limitations": ["Project-specific engine paths are hard-coded", "Cable material attributes contain placeholder paths", "No independent engine import acceptance was run"]
+  },
+  "outputs": [
+    {"product": "instance_points", "path_contract": "named HDA output", "attributes": ["orient", "scale", "variant", "instancepath"]},
+    {"product": "game_geometry", "path_contract": "named HDA output", "attributes": ["uv", "unreal_material"]}
+  ],
+  "acceptance": {"verified": false, "checks": ["curve coverage", "corner policy", "engine path validity", "stable seed"], "evidence": []},
+  "provenance": {"created_at": "2026-08-27T00:00:00Z", "created_by": "Codex bounded Houdini inspection", "supersedes": ""},
+  "tags": ["project-titan", "curve", "instancing", "game-content"]
+}

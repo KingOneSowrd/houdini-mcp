@@ -28,6 +28,11 @@ houdini-mcp/
 │   └── shelf/
 │       ├── start_server.py     # Shelf Tool example: start server
 │       └── stop_server.py      # Shelf Tool example: stop server
+├── skills/
+│   └── houdini-production-workflows/
+│       ├── SKILL.md            # Production routing and execution policy
+│       ├── references/         # Contracts, workflows, cases, and records
+│       └── scripts/            # Case ingestion and experience validation
 ├── tests/
 │   ├── headless_host.py        # hython integration-test host
 │   ├── test_tools.py           # Original/live Houdini capability tests
@@ -35,7 +40,8 @@ houdini-mcp/
 │   ├── test_expansion_tools.py # Graph Patch and HDA integration tests
 │   ├── test_registry_unit.py   # Registry and safety unit tests
 │   ├── test_hybrid_surface.py  # Hybrid/Legacy MCP exposure tests
-│   └── test_sidefx_docs.py     # Portable SideFX help discovery tests
+│   ├── test_sidefx_docs.py     # Portable SideFX help discovery tests
+│   └── test_experience_system.py # Skill records and lifecycle tests
 ├── CAPABILITY_TODO.md          # Prioritized capability and workflow backlog
 ├── AGENTS.md                   # Repository development constraints
 ├── urls.env.example            # Optional OPUS configuration template
@@ -49,6 +55,38 @@ houdini-mcp/
 
 Local generated directories such as `.venv/`, `__pycache__/`, and uv caches
 are not part of the source layout and must remain untracked.
+
+## Production workflow skill
+
+The repository includes a source-controlled
+`houdini-production-workflows` skill that turns the MCP execution layer into a
+case-driven production system. It keeps routing and safety rules in a compact
+entry point, loads domain workflows only when relevant, and stores cases,
+recipes, execution experiences, and future template manifests as strict,
+versioned records.
+
+The initial knowledge set contains five bounded Project Titan evidence records
+and eight candidate workflow recipes covering curve instancing, surface growth,
+modular generation, Vellum settle, RBD destruction, Pyro flipbooks, real-time
+animation/VAT, and Pivot Painter. Candidate status is intentional: inspecting a
+successful tutorial does not prove production acceptance in every project.
+
+Useful maintenance commands:
+
+```powershell
+python skills/houdini-production-workflows/scripts/experience_cli.py validate
+python skills/houdini-production-workflows/scripts/experience_cli.py assess
+python skills/houdini-production-workflows/scripts/experience_cli.py reindex
+
+# Run with the active Houdini installation's hython executable.
+hython skills/houdini-production-workflows/scripts/inspect_houdini_case.py `<case.hip-or-hda>` --source-root `<portable-root>` --output `<candidate.json>`
+```
+
+The Hython inspector uses manual update mode and does not save, cache, render,
+or export. Its output is always a candidate case with acceptance left false.
+Review and validate evidence before promoting any record. Binary HIP/HDA
+templates will be added only when a real recipe has a safe, reusable skeleton;
+the skill does not ship empty placeholder templates.
 
 ## Hybrid tool catalog
 
