@@ -182,7 +182,7 @@
 
     .graph-toolbar {
       display: grid;
-      grid-template-columns: minmax(220px, 1.6fr) repeat(3, minmax(150px, 0.7fr)) auto;
+      grid-template-columns: minmax(220px, 1.6fr) repeat(4, minmax(140px, 0.7fr)) auto;
       gap: 10px;
       margin-bottom: 12px;
     }
@@ -526,6 +526,14 @@
           <label for="workflow-filter">工作流</label>
           <select id="workflow-filter"><option value="">全部工作流</option></select>
         </div>
+        <div class="field">
+          <label for="relation-filter">连线层级</label>
+          <select id="relation-filter">
+            <option value="spine">只看主干</option>
+            <option value="evidence">主干 + 证据</option>
+            <option value="all">全部关系</option>
+          </select>
+        </div>
         <button id="fit-graph" class="plain-button fit-button" type="button">显示全部</button>
       </div>
 
@@ -547,7 +555,8 @@
             <h3>阅读方式</h3>
             <ul>
               <li>内圈是 Workflow，外圈依次展开 Recipe 和证据记录。</li>
-              <li>节点形状表示类型，边标签说明知识关系。</li>
+              <li>默认只显示 Workflow 与 Recipe 主干；点击节点时展开直接证据链。</li>
+              <li>需要全局检查时，可切换“主干 + 证据”或“全部关系”。</li>
               <li>成熟度来自记录状态，不由页面推断。</li>
             </ul>
           </div>
@@ -625,6 +634,7 @@
     byId("gap-total").textContent = stat.evidence_gaps;
 
     const workflowFilter = byId("workflow-filter");
+    const relationFilter = byId("relation-filter");
     KNOWLEDGE.workflow_rows.forEach((workflow) => {
       const option = document.createElement("option");
       option.value = workflow.id;
@@ -713,7 +723,7 @@
             "target-arrow-color": "#8b9d83",
             "target-arrow-shape": "triangle",
             "arrow-scale": 0.72,
-            "label": "data(label)",
+            "label": "",
             "font-family": "Trebuchet MS, Segoe UI, sans-serif",
             "font-size": 8,
             "color": "#68705d",
@@ -726,7 +736,16 @@
           }
         },
         { selector: ".dimmed", style: { "opacity": 0.1 } },
-        { selector: "edge.focused", style: { "opacity": 0.9, "width": 3, "line-color": "#c66b3d", "target-arrow-color": "#c66b3d" } }
+        {
+          selector: "edge.focused",
+          style: {
+            "opacity": 0.9,
+            "width": 3,
+            "line-color": "#c66b3d",
+            "target-arrow-color": "#c66b3d",
+            "label": "data(label)"
+          }
+        }
       ],
       layout: {
         name: "concentric",
@@ -786,16 +805,33 @@
       }
     }
 
-    function clearFocus() {
+    function relationIsVisible(edge) {
+      const mode = relationFilter.value;
+      const tier = edge.data("tier");
+      return mode === "all" || (mode === "evidence" && tier !== "context") || tier === "spine";
+    }
+
+    function updateEdgeVisibility() {
+      cy.edges().forEach((edge) => {
+        const endpointsVisible = edge.source().style("display") !== "none" && edge.target().style("display") !== "none";
+        edge.style("display", endpointsVisible && relationIsVisible(edge) ? "element" : "none");
+      });
+    }
+
+    function clearFocus(restoreEdges = true) {
       cy.elements().removeClass("dimmed focused");
       cy.nodes().unselect();
+      if (restoreEdges) updateEdgeVisibility();
     }
 
     function focusNode(node) {
-      clearFocus();
-      const neighborhood = node.closedNeighborhood();
+      applyFilters();
+      const directEdges = node.connectedEdges();
+      directEdges.connectedNodes().style("display", "element");
+      directEdges.style("display", "element");
+      const neighborhood = node.collection().union(directEdges).union(directEdges.connectedNodes());
       cy.elements().not(neighborhood).addClass("dimmed");
-      neighborhood.edges().addClass("focused");
+      directEdges.addClass("focused");
       node.select();
       renderDetail(node.data());
     }
@@ -803,17 +839,18 @@
     cy.on("tap", "node", (event) => focusNode(event.target));
     cy.on("tap", (event) => {
       if (event.target === cy) {
-        clearFocus();
+        applyFilters();
         cy.fit(cy.elements(":visible"), 55);
       }
     });
 
     function applyFilters() {
-      clearFocus();
+      clearFocus(false);
       const query = byId("graph-search").value.trim().toLowerCase();
       const type = byId("type-filter").value;
       const status = byId("status-filter").value;
       const workflow = workflowFilter.value;
+      const relationMode = relationFilter.value;
       cy.nodes().forEach((node) => {
         const data = node.data();
         const searchable = [data.record_id, data.label, data.summary, ...data.tags].join(" ").toLowerCase();
@@ -821,17 +858,15 @@
         const statusMatch = !status || data.status === status;
         const workflowMatch = !workflow || data.workflow === workflow || data.workflows.includes(workflow);
         const queryMatch = !query || searchable.includes(query);
-        node.style("display", typeMatch && statusMatch && workflowMatch && queryMatch ? "element" : "none");
+        const compactNodeMatch = relationMode !== "spine" || ["workflow", "recipe", "template_manifest"].includes(data.type) || Boolean(type) || Boolean(query);
+        node.style("display", typeMatch && statusMatch && workflowMatch && queryMatch && compactNodeMatch ? "element" : "none");
       });
-      cy.edges().forEach((edge) => {
-        const visible = edge.source().style("display") !== "none" && edge.target().style("display") !== "none";
-        edge.style("display", visible ? "element" : "none");
-      });
+      updateEdgeVisibility();
       const visible = cy.elements(":visible");
       if (visible.length) cy.fit(visible, 55);
     }
 
-    ["graph-search", "type-filter", "status-filter", "workflow-filter"].forEach((id) => {
+    ["graph-search", "type-filter", "status-filter", "workflow-filter", "relation-filter"].forEach((id) => {
       byId(id).addEventListener(id === "graph-search" ? "input" : "change", applyFilters);
     });
 
@@ -840,6 +875,7 @@
       byId("type-filter").value = "";
       byId("status-filter").value = "";
       workflowFilter.value = "";
+      relationFilter.value = "spine";
       applyFilters();
     });
 
@@ -861,6 +897,7 @@
       byId("type-filter").value = "";
       byId("status-filter").value = "";
       workflowFilter.value = "";
+      relationFilter.value = "spine";
       applyFilters();
       const node = cy.getElementById(nodeId);
       if (node.length) {
@@ -941,6 +978,8 @@
     if (KNOWLEDGE.warnings.length) {
       byId("graph-warnings").appendChild(element("div", "warning-box", KNOWLEDGE.warnings.join("；")));
     }
+
+    applyFilters();
   </script>
 </body>
 </html>

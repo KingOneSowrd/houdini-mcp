@@ -125,7 +125,7 @@ def build_model() -> dict[str, Any]:
     edge_keys: set[tuple[str, str, str]] = set()
     warnings: list[str] = []
 
-    def add_edge(source: str, target: str, relation: str) -> None:
+    def add_edge(source: str, target: str, relation: str, tier: str) -> None:
         key = (source, target, relation)
         if source == target or key in edge_keys:
             return
@@ -138,6 +138,7 @@ def build_model() -> dict[str, Any]:
                     "target": target,
                     "relation": relation,
                     "label": relation.replace("_", " "),
+                    "tier": tier,
                 }
             }
         )
@@ -202,17 +203,24 @@ def build_model() -> dict[str, Any]:
                 warnings.append(f"{identifier} references unknown workflow {workflow_id}")
                 continue
             relation = "scoped_to" if record_type == "case" else "belongs_to"
+            tier = "spine" if record_type in {"recipe", "template_manifest"} else "context"
             add_edge(
                 _node_id(record_type, identifier),
                 _node_id("workflow", workflow_id),
                 relation,
+                tier,
             )
 
         if record_type == "recipe":
             evidence = record.get("evidence", {})
             for case_id in evidence.get("case_ids", []):
                 if case_id in records_by_id:
-                    add_edge(_node_id("case", case_id), _node_id("recipe", identifier), "supports")
+                    add_edge(
+                        _node_id("case", case_id),
+                        _node_id("recipe", identifier),
+                        "supports",
+                        "evidence",
+                    )
                 else:
                     warnings.append(f"{identifier} references missing case {case_id}")
             for experience_id in evidence.get("experience_ids", []):
@@ -221,6 +229,7 @@ def build_model() -> dict[str, Any]:
                         _node_id("experience", experience_id),
                         _node_id("recipe", identifier),
                         "verifies",
+                        "evidence",
                     )
                 else:
                     warnings.append(f"{identifier} references missing experience {experience_id}")
@@ -233,12 +242,18 @@ def build_model() -> dict[str, Any]:
                         _node_id("experience", identifier),
                         _node_id("recipe", recipe_id),
                         "executes",
+                        "evidence",
                     )
                 else:
                     warnings.append(f"{identifier} references missing recipe {recipe_id}")
             for case_id in provenance.get("case_ids", []):
                 if case_id in records_by_id:
-                    add_edge(_node_id("case", case_id), _node_id("experience", identifier), "informed")
+                    add_edge(
+                        _node_id("case", case_id),
+                        _node_id("experience", identifier),
+                        "informed",
+                        "context",
+                    )
                 else:
                     warnings.append(f"{identifier} references missing case {case_id}")
 
@@ -270,7 +285,12 @@ def build_model() -> dict[str, Any]:
                             }
                         }
                     )
-                add_edge(_node_id("experience", identifier), capability_node, "uses")
+                add_edge(
+                    _node_id("experience", identifier),
+                    capability_node,
+                    "uses",
+                    "evidence",
+                )
 
         supersedes = record.get("provenance", {}).get("supersedes", "")
         if supersedes:
@@ -280,6 +300,7 @@ def build_model() -> dict[str, Any]:
                     _node_id(record_type, identifier),
                     _node_id(replaced["record_type"], supersedes),
                     "supersedes",
+                    "context",
                 )
             else:
                 warnings.append(f"{identifier} supersedes missing record {supersedes}")

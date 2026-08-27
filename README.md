@@ -96,7 +96,9 @@ The dashboard projects the validated records into an interactive relationship
 graph, workflow matrix, Recipe evidence view, and correction hot spots. It is a
 read-only generated view; JSON and Markdown records remain the only knowledge
 source. Cytoscape.js 3.34.2 is vendored under its MIT license so the dashboard
-does not require a network connection.
+does not require a network connection. The graph defaults to the Workflow ↔
+Recipe spine; selecting a node expands its direct evidence chain, while a
+relationship filter exposes evidence or contextual edges only when needed.
 
 ## Hybrid tool catalog
 

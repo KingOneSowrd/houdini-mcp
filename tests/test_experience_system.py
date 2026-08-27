@@ -119,6 +119,9 @@ class ExperienceSystemTests(unittest.TestCase):
         for edge in model["edges"]:
             self.assertIn(edge["data"]["source"], node_ids)
             self.assertIn(edge["data"]["target"], node_ids)
+            self.assertIn(edge["data"]["tier"], {"spine", "evidence", "context"})
+        spine_edges = [edge for edge in model["edges"] if edge["data"]["tier"] == "spine"]
+        self.assertEqual(len(spine_edges), 8)
 
     def test_dashboard_render_is_self_contained(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -132,6 +135,8 @@ class ExperienceSystemTests(unittest.TestCase):
             self.assertNotIn("fetch(", content)
             self.assertIn("project-titan-curve-modules", content)
             self.assertIn("cytoscape", content)
+            self.assertIn('id="relation-filter"', content)
+            self.assertIn('<option value="spine">只看主干</option>', content)
 
     def test_dashboard_cli_builds_requested_output(self):
         with tempfile.TemporaryDirectory() as temporary:
