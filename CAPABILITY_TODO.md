@@ -8,7 +8,7 @@
 
 MCP 不追求把每个 Houdini HOM 方法包装成一个 Tool。模型应通过少量通用原语、实时 Schema 和经过验证的工作流配方完成大多数任务。只有模型无法可靠组合、必须跨越事务边界，或能显著减少昂贵往返的操作，才升级为专用 Catalog 能力。
 
-> 开发状态（2026-07-20）：P0 的三个 Catalog 入口、Channel 保护、HDA Candidate/Definition/创建/验证入口和受限原子 Graph Patch 已进入代码。Bridge 单元测试与 Houdini 21.0.440 GUI 会话集成测试均通过；真实验收覆盖 `box -> transform -> normal` 构图、Snapshot、Channel 保护、外部 HDA 创建、Vector 参数提升、内部 Channel Reference、Cook、Definition 身份、文件哈希和安全清理。尚未实现或未覆盖的高级 Interface Patch、故障注入矩阵和 P3 能力仍保持未勾选。
+> 开发状态（2026-08-27）：Catalog 已包含 43 项能力。实时节点发现、Network Snapshot、Channel 保护、Graph Patch、HDA Candidate/Definition/创建/Interface 参数提升/验证、材质绑定读取和 USD Stage Snapshot 已进入代码。23 项 Bridge 单元测试以及 Houdini 21.0.440 下的基础、Catalog、HDA 扩展集成测试均通过。当前项目已经具备可靠的通用 Houdini 执行层，但异步任务、生产缓存与发布、Solaris Authoring、动画/模拟、结果验收和端到端制作案例仍是进入真实工作流前的主要缺口。
 
 ## 当前基线
 
@@ -402,6 +402,142 @@ Ramp、Multiparm、Folder Set、Callback 和复杂条件界面留到第二阶段
 
 如果某个配方长期需要大量往返或频繁失败，再以真实证据提议专用 Catalog 能力。
 
+## 生产级能力缺口（新增 Backlog）
+
+当前 43 项能力足以完成节点发现、普通网络构建、参数修改、基础诊断、HDA 创建和只读 USD 检查，但“能够创建节点”不等于“能够独立交付镜头或资产”。以下缺口按真实制作阻塞程度排序。
+
+### P0：异步任务与生命周期
+
+目标：让模拟、缓存、渲染和导出不再受单次同步 TCP 调用及固定超时限制。
+
+- [ ] 增加会话内 `JobRegistry`，为长任务返回稳定 `job_id`、类型、创建时间和当前状态
+- [ ] 增加 `get_job_status`、`cancel_job` 和有界 `list_jobs`
+- [ ] 状态至少区分 queued、running、succeeded、failed、cancelled 和 unknown
+- [ ] 返回进度、当前帧、输出摘要、警告、错误和可安全重试标记
+- [ ] Houdini/Shelf Server 重启后明确报告任务状态丢失，不把失联任务标记为成功
+- [ ] 明确哪些 Houdini 操作可安全取消，不能取消的操作只提供停止后续帧或进程的补偿策略
+- [ ] 长任务不占用共享请求/响应通道；普通只读查询仍可响应
+- [ ] 同一幂等键重试不会重复提交缓存、导出或渲染任务
+
+验收：提交 20 帧测试缓存或渲染，能够轮询进度、取消、识别部分产物，并在连接超时或服务器重启后返回真实状态。
+
+### P0：生产文件、缓存、导入导出与发布
+
+目标：形成“构建网络 → 生成产物 → 验证产物 → 发布”的磁盘交付闭环。
+
+- [ ] 增加 File Cache/ROP 输出计划读取和执行能力，默认 Dry Run
+- [ ] 支持受控的 BGEO、USD、Alembic 和 FBX 导入/导出；格式支持由当前 Houdini 节点与 License 动态判断
+- [ ] 统一帧范围、步长、文件序列、`$HIP`/`$JOB`/环境变量展开和跨平台路径规范化
+- [ ] 默认禁止覆盖已有缓存、HIP、HDA、USD 和渲染产物
+- [ ] 输出前验证目标目录、真实解析路径、写权限、预计覆盖范围和可用空间
+- [ ] 输出后验证文件存在、大小、帧完整性、时间戳和可选 SHA-256
+- [ ] 返回发布 Manifest，记录 HIP Revision、输出节点、参数摘要、帧范围、产物和失败帧
+- [ ] 支持缺帧、零字节文件、损坏文件和陈旧缓存检测
+- [ ] 明确临时文件、部分输出和失败清理策略；不得依赖 Houdini Undo 回滚磁盘写入
+
+验收：将 SOP 几何缓存为帧序列并发布 USD，在人为制造缺帧和已有目标时能够正确拒绝或报告，不产生未声明覆盖。
+
+### P1：正式渲染链路
+
+目标：从当前的视口/相机图像能力扩展到可跟踪、可验证的正式渲染交付。
+
+- [ ] 发现当前会话可用的 Karma、Mantra 和第三方 ROP/LOP Render 节点
+- [ ] 读取并验证相机、分辨率、帧范围、AOV、输出路径、采样和颜色管理摘要
+- [ ] 通过异步任务提交单帧和帧序列渲染，并支持进度、取消和失败帧重试
+- [ ] 验证输出图像存在、尺寸、通道/AOV、帧完整性和基础像素统计
+- [ ] 检测全黑、全透明、NaN/Inf、明显过曝等基础失败模式
+- [ ] 区分“渲染命令成功”和“图像通过验收”，不得只以进程退出码判定交付完成
+
+验收：模板场景完成 Karma Turntable，输出序列和 AOV 完整；删除一帧或制造黑帧后验收必须失败并给出定位信息。
+
+### P1：Solaris / USD Authoring
+
+目标：在保留 LOP 节点优先原则的前提下，安全完成可持久化 USD 场景装配。
+
+- [ ] 用节点发现、Schema 和 Graph Patch 验证 Reference、Sublayer、Payload、Variant、Collection 和 Configure Primitive 配方
+- [ ] 验证 Material Library、Assign Material、Light、Camera、Render Settings 和 Karma 节点配方
+- [ ] 增加 USD Layer 保存/导出计划、目标层身份、Edit Target 和覆盖保护
+- [ ] 增加 Reference/Payload 资产路径和缺失依赖检查
+- [ ] `get_stage_snapshot` 补齐 Variant Set/Selection、实例、Payload 加载状态和分页层栈摘要
+- [ ] 只有 LOP 无法安全表达且有真实案例时，才增加直接 USD Prim 写入；默认禁止持久修改 Session Layer
+
+验收：从空模板装配一个外部资产，创建 Variant、材质绑定、灯光和 Karma 设置，保存 USD 后在干净会话重新打开并通过 Stage Snapshot 验证。
+
+### P1：动画、时间与 Channel
+
+- [ ] 增加关键帧和表达式的分页读取能力
+- [ ] 增加带 Dry Run、时间范围、Channel 覆盖保护和 Undo 的关键帧写入能力
+- [ ] 支持插值、外推、关键帧删除和 Channel Revision 检查
+- [ ] 增加全局帧范围、FPS、当前时间和播放范围读取/设置
+- [ ] 保持表达式、参数引用和关键帧类型，不允许静默烘焙或覆盖
+
+验收：创建并修改一条动画曲线，Revision 冲突和已有表达式时拒绝写入，一个 Undo 恢复整次修改。
+
+### P2：模拟与领域工作流
+
+优先通过通用节点能力和版本感知配方构建网络；只为任务生命周期、缓存边界和稳定高频事务增加专用能力。
+
+- [ ] Vellum：约束、Solver、缓存和基础结果检查配方
+- [ ] Pyro：Source、Sparse Solver、缓存、体积字段和渲染检查配方
+- [ ] FLIP：Source、Solver、Meshing、缓存和粒子/表面检查配方
+- [ ] RBD：分块、约束、Solver、缓存和断裂结果检查配方
+- [ ] TOP/PDG：Graph Cook、Work Item 状态、失败重试和输出收集
+- [ ] KineFX/APEX 只在有明确角色工作流案例后进入范围
+
+验收不以“节点成功创建”为准，必须包含小规模模拟运行、缓存完整性、错误收集和可重复结果检查。
+
+### P2：事务、恢复与可观测性
+
+- [ ] Houdini 端缓存近期 `operation_id`/`idempotency_key` 结果，覆盖 TCP 超时后的安全重试
+- [ ] Graph Patch 完成反向操作日志与失败补偿，不再仅依赖 Undo Group
+- [ ] 为高风险场景修改增加可选 HIP Checkpoint/Save Copy，并明确恢复点
+- [ ] 所有响应携带可关联的 `operation_id`；Bridge 与 Houdini 日志可按该 ID 检索
+- [ ] 增加结构化耗时、Cook 时间、请求大小、返回大小和截断信息
+- [ ] 区分调用失败、Cook 失败、任务失败、验收失败和回滚失败
+- [ ] 本地 TCP 继续只绑定 loopback；若未来允许远程连接，必须先增加认证、授权和传输保护
+
+### P2：结果语义验收
+
+- [ ] 几何规则：边界、点面数量、属性、组、退化面、非流形和尺寸容差
+- [ ] USD 规则：Prim 路径、类型、Layer、Variant、Binding、Payload 和依赖完整性
+- [ ] 缓存规则：帧范围、缺帧、大小异常、拓扑变化策略和时间采样
+- [ ] 图像规则：尺寸、通道、黑帧、透明帧、NaN/Inf 和曝光范围
+- [ ] HDA 规则：接口兼容性、默认值、内部引用、干净会话安装和测试实例 Cook
+- [ ] 验收规则使用严格 Schema，可保存到项目但不得执行任意模型生成代码
+
+## 真实案例、Skill 与模板 HIP
+
+Skill 和模板 HIP 是生产工作流层，不替代 MCP 底层能力：
+
+- **MCP** 提供实时事实、原子操作、安全边界、任务生命周期和结果验证。
+- **Skill** 描述任务规划、能力调用顺序、失败分支、恢复策略和验收标准。
+- **模板 HIP** 提供稳定的网络上下文、输出目录、颜色管理、灯光、相机、渲染设置和命名约定。
+
+### 首批端到端案例
+
+- [ ] **程序化道具 → HDA → Turntable**
+  - 从需求构建 SOP 网络并封装版本化 HDA
+  - 提升参数、创建 MaterialX、生成 Turntable 和 Karma 输出
+  - 在干净会话安装 HDA、Cook、渲染并验证产物
+- [ ] **SOP 地形/散布 → 缓存 → USD 发布**
+  - 构建地形和实例散布网络
+  - 生成可恢复缓存、装配 LOP、发布 USD 和 Manifest
+  - 验证 Prim、Payload/Reference、材质绑定和缺失依赖
+- [ ] **Solaris 场景装配 → 灯光 → Karma 序列**
+  - 从模板装配资产、Variant、材质、相机和灯光
+  - 异步渲染帧序列和 AOV
+  - 检查缺帧、黑帧、分辨率、通道和交付目录
+
+### 每个案例的交付物
+
+- [ ] 一个版本化、可重复执行的工作流 Skill
+- [ ] 一个尽量精简且不包含项目私有绝对路径的模板 HIP
+- [ ] 一份机器可读验收规则和期望产物 Manifest
+- [ ] 一组 Houdini 21.0.440 headless/GUI 集成测试
+- [ ] 一份失败注入记录：陈旧 Revision、已有目标、缺失资产、Cook 失败、任务取消和输出不完整
+
+只有上述三个案例至少完整通过一个，才能把项目定义为“已介入真实生产工作流”；仅通过节点创建和技术单元测试仍定义为“通用执行层完成”。
+
 ## 路径与磁盘写入统一规则
 
 - [ ] 使用 `pathlib`、Houdini 环境展开和规范化绝对路径进行执行时验证
@@ -466,15 +602,13 @@ Ramp、Multiparm、Folder Set、Callback 和复杂条件界面留到第二阶段
 
 - HDA Viewer State、Handles 和高级交互资产
 - 完整 HDA 发布平台、跨项目依赖打包和自动市场发布
-- 表达式、关键帧和时间轴 Tool；动画优先通过 Wrangle 中的 `$F`、`@Frame`、`@Time` 和 `@TimeInc` 编码
-- JobRegistry、异步 Render 和异步 USD Export
-- Simulation、File Cache 和 TOP/PDG 专用能力
-- Houdini UI、选择、Pane、视口和相机控制
+- Houdini UI 选择、Pane、Desktop 布局和高级视口交互控制
 - CHOP 专用工作流、Takes 和 Bundles
 - Python Panel 创建与编辑
-- Desktop/Pane 布局持久化
 - 第三方渲染器专用 Tool
 - 第三方资产平台的更多直接集成
+
+异步任务、正式 Render/USD Export、File Cache、动画和模拟验收已经提升到“生产级能力缺口”Backlog。它们仍应以真实案例驱动，避免为每个节点或领域建立重复的薄包装 Tool。
 
 实验性需求仍可通过高风险 `execute_houdini_code` 处理，但该逃生口不替代稳定能力。只有调用模式稳定、Schema 严格、安全边界明确且能绑定官方文档后，才晋升为正式 Catalog 能力。
 
