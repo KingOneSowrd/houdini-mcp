@@ -91,7 +91,7 @@ MCP 不追求把每个 Houdini HOM 方法包装成一个 Tool。模型应通过�
 
 每项能力完成前必须满足适用条目：
 
-- [ ] 在 `houdini_catalog.py` 中使用 `extra="forbid"` 的严格 Pydantic 参数模型
+- [ ] 在 `houdini_mcp_bridge/catalog.py` 中使用 `extra="forbid"` 的严格 Pydantic 参数模型
 - [ ] 注册名称、分类、说明、关键词、风险、可用性和至少一项有效 `DocRef`
 - [ ] 明确副作用范围：`read_only`、`scene`、`session_ui`、`disk`、`external_process` 或 `external_network`
 - [ ] 明确回滚方式：`none`、`undo`、`compensation`、`backup` 或 `manifest`；需要 Registry 自动门控时再扩展 `ToolSpec`

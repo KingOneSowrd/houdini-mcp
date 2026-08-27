@@ -3,7 +3,7 @@
 #
 # Prerequisites:
 #   - houdinimcp package must be in Houdini's Python path
-#   - See CLAUDE.md for setup instructions
+#   - See README.md for setup instructions
 
 import houdinimcp
 

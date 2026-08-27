@@ -7,21 +7,27 @@
 
 ## Project structure
 
-The runtime entry points intentionally remain at the repository root so the
-existing Houdini package, Shelf Tool, and `uv run` installation workflows keep
-working.
+Compatibility entry points intentionally remain at the repository root so the
+existing Houdini package, Shelf Tool, imports, and `uv run` workflows keep
+working. Runtime implementation lives in focused subpackages.
 
 ```text
 houdini-mcp/
-├── houdini_mcp_server.py       # FastMCP stdio bridge and direct MCP tools
-├── server.py                   # Houdini-side TCP server and HOM handlers
+├── houdini_mcp_server.py       # Backward-compatible MCP launcher
+├── server.py                   # Backward-compatible Houdini server import
 ├── __init__.py                 # Houdini package start/stop lifecycle
-├── houdini_catalog.py          # Typed catalog capability declarations
-├── tool_registry.py            # Discovery, validation, risk, and dispatch
-├── sidefx_docs.py              # Installed SideFX documentation provider
-├── HoudiniMCPRender.py         # Houdini viewport/render helper routines
-├── shelf_tool_start_mcp.py     # Shelf Tool example: start server
-├── shelf_tool_stop_mcp.py      # Shelf Tool example: stop server
+├── houdini_mcp_bridge/         # Runs outside Houdini
+│   ├── bridge.py               # FastMCP stdio bridge and direct tools
+│   ├── catalog.py              # Typed catalog capability declarations
+│   ├── registry.py             # Discovery, validation, risk, and dispatch
+│   └── sidefx_docs.py          # Installed SideFX docs provider
+├── houdinimcp_runtime/         # Runs inside Houdini
+│   ├── server.py               # TCP server, dispatcher, and HOM handlers
+│   └── render.py               # Viewport/render helper routines
+├── scripts/
+│   └── shelf/
+│       ├── start_server.py     # Shelf Tool example: start server
+│       └── stop_server.py      # Shelf Tool example: stop server
 ├── tests/
 │   ├── headless_host.py        # hython integration-test host
 │   ├── test_tools.py           # Original/live Houdini capability tests
@@ -145,14 +151,19 @@ C:/Users/YourUserName/Documents/houdini19.5/scripts/python/houdinimcp/
 Inside **`houdinimcp/`**, place:
 
 - **`__init__.py`** – handles plugin initialization (start/stop server)  
-- **`server.py`** – defines the `HoudiniMCPServer` (listening on port `9900` by default)
-- **`houdini_mcp_server.py`** – optional bridging script (some prefer a separate location)
-- **`pyproject.toml`**
+- **`server.py`** – compatibility import for the Houdini server
+- **`houdinimcp_runtime/`** – Houdini-side server and render implementation
+- **`houdini_mcp_server.py`** – backward-compatible bridge launcher
+- **`houdini_mcp_bridge/`** – bridge, catalog, registry, and docs implementation
+- **`pyproject.toml`** – Python dependencies
 
 
-*(If you prefer, `houdini_mcp_server.py` can live elsewhere. As long as you know its path for running with `uv`.)*
+Copy the complete repository layout rather than copying only the three root
+Python files. The root launchers depend on the two implementation subpackages.
 
 ### 1.2 Shelf Tool 
+
+Ready-to-copy start and stop examples are available under `scripts/shelf/`.
 
 create a **Shelf Tool** to toggle the server in Houdini:
 

@@ -10,16 +10,20 @@ users.
 
 Keep the existing two-process design:
 
-1. `houdini_mcp_server.py` is the FastMCP bridge. It runs outside Houdini,
-   exposes MCP tools over stdio, validates requests, and relays commands over
-   TCP.
-2. `server.py` runs inside Houdini, listens on `127.0.0.1:9900` by default, dispatches JSON
-   commands on Houdini's main thread, and performs the actual `hou` operations.
-3. `houdini_catalog.py` declares typed catalog capabilities and their metadata.
-4. `tool_registry.py` owns discovery, schema generation, availability checks,
-   risk gates, validation, and dispatch.
-5. `sidefx_docs.py` discovers and searches the official documentation bundled
-   with the active Houdini installation.
+1. `houdini_mcp_server.py` is the backward-compatible launcher. The FastMCP
+   bridge implementation lives in `houdini_mcp_bridge/bridge.py`, runs outside
+   Houdini, exposes MCP tools over stdio, validates requests, and relays commands
+   over TCP.
+2. `server.py` is the backward-compatible package import. The implementation in
+   `houdinimcp_runtime/server.py` runs inside Houdini, listens on
+   `127.0.0.1:9900` by default, dispatches JSON commands on Houdini's main
+   thread, and performs the actual `hou` operations.
+3. `houdini_mcp_bridge/catalog.py` declares typed catalog capabilities and their metadata.
+4. `houdini_mcp_bridge/registry.py` owns discovery, schema generation,
+   availability checks, risk gates, validation, and dispatch.
+5. `houdini_mcp_bridge/sidefx_docs.py` discovers and searches the official
+   documentation bundled with the active Houdini installation.
+6. `houdinimcp_runtime/render.py` contains Houdini UI/render helper routines.
 
 The default tool mode is `hybrid`: keep the compact direct MCP surface and make
 less-common capabilities available through `search_tools`, `get_tool_schema`,
@@ -30,7 +34,7 @@ expanded compatibility surface.
 
 Do not change these without an explicit user request:
 
-- The repository/package deployment layout.
+- The root compatibility launchers and two implementation package layout.
 - The `uv run` MCP launch workflow.
 - MCP stdio transport.
 - The Shelf Tool start/stop workflow.
@@ -45,12 +49,12 @@ Keep Windows, macOS, and Linux support.
 
 For a normal catalog capability:
 
-1. Add or update a strict Pydantic argument model in `houdini_catalog.py`.
+1. Add or update a strict Pydantic argument model in `houdini_mcp_bridge/catalog.py`.
 2. Register a `ToolSpec` with category, description, keywords, mutation flag,
    Undo support, risk level, availability, examples when useful, and at least
    one valid SideFX `DocRef`.
-3. Implement the Houdini-side handler in `server.py` using live `hou` data.
-4. Add the command to the dispatcher in `server.py`.
+3. Implement the Houdini-side handler in `houdinimcp_runtime/server.py` using live `hou` data.
+4. Add the command to the dispatcher in `houdinimcp_runtime/server.py`.
 5. Add mutating commands to `MUTATING_COMMANDS` so one agent action maps to one
    Houdini Undo step whenever the operation supports Undo.
 6. Add a direct `@mcp.tool()` wrapper only for a genuinely high-frequency

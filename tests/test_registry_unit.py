@@ -1,8 +1,8 @@
 import unittest
 from typing import Optional
 
-from tool_registry import DocRef, ToolArguments, ToolRegistry, ToolSpec
-from houdini_catalog import build_registry as build_houdini_registry
+from houdini_mcp_bridge.registry import DocRef, ToolArguments, ToolRegistry, ToolSpec
+from houdini_mcp_bridge.catalog import build_registry as build_houdini_registry
 
 
 class EchoArguments(ToolArguments):

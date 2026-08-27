@@ -6,8 +6,8 @@ from typing import Any, Callable, Dict, List, Optional, Literal
 
 from pydantic import Field
 
-from sidefx_docs import official_url
-from tool_registry import DocRef, ToolArguments, ToolRegistry, ToolSpec
+from .sidefx_docs import official_url
+from .registry import DocRef, ToolArguments, ToolRegistry, ToolSpec
 
 
 Relay = Callable[[str, Dict[str, Any]], Dict[str, Any]]

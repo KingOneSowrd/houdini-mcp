@@ -5,7 +5,7 @@ import sys
 import unittest
 import inspect
 
-from houdini_catalog import build_registry
+from houdini_mcp_bridge.catalog import build_registry
 
 
 HYBRID_TOOLS = {

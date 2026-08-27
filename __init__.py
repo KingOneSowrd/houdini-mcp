@@ -1,6 +1,6 @@
 import hou
 import os
-from .server import HoudiniMCPServer
+from .houdinimcp_runtime.server import HoudiniMCPServer
 
 DEFAULT_PORT = int(os.environ.get("HOUDINI_MCP_PORT", "9900"))
 

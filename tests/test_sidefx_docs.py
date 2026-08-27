@@ -4,9 +4,9 @@ import zipfile
 from pathlib import Path
 from unittest import mock
 
-from sidefx_docs import SideFXDocsProvider, discover_help_root, official_url
-from houdini_catalog import build_registry
-from tool_registry import DocRef
+from houdini_mcp_bridge.sidefx_docs import SideFXDocsProvider, discover_help_root, official_url
+from houdini_mcp_bridge.catalog import build_registry
+from houdini_mcp_bridge.registry import DocRef
 
 
 def make_help_root(parent: Path, version: str = "") -> Path:
@@ -57,12 +57,12 @@ class SideFXDocsTests(unittest.TestCase):
             base = Path(temp)
             old = make_help_root(base, "20.5.100")
             new = make_help_root(base, "21.0.440")
-            with mock.patch("sidefx_docs._windows_install_roots", return_value=[old.parent.parent, new.parent.parent]):
+            with mock.patch("houdini_mcp_bridge.sidefx_docs._windows_install_roots", return_value=[old.parent.parent, new.parent.parent]):
                 found = discover_help_root({}, system_name="Windows")
             self.assertEqual(found, new.resolve())
-            with mock.patch("sidefx_docs._mac_install_roots", return_value=[new.parent.parent]):
+            with mock.patch("houdini_mcp_bridge.sidefx_docs._mac_install_roots", return_value=[new.parent.parent]):
                 self.assertEqual(discover_help_root({}, system_name="Darwin"), new.resolve())
-            with mock.patch("sidefx_docs._linux_install_roots", return_value=[new.parent.parent]):
+            with mock.patch("houdini_mcp_bridge.sidefx_docs._linux_install_roots", return_value=[new.parent.parent]):
                 self.assertEqual(discover_help_root({}, system_name="Linux"), new.resolve())
 
     def test_search_and_reference_resolution(self):
@@ -87,9 +87,9 @@ class SideFXDocsTests(unittest.TestCase):
             self.assertIn("node-like", refs[0]["summary"])
 
     def test_missing_docs_degrades_without_network(self):
-        with mock.patch("sidefx_docs._windows_install_roots", return_value=[]), mock.patch(
-            "sidefx_docs._mac_install_roots", return_value=[]
-        ), mock.patch("sidefx_docs._linux_install_roots", return_value=[]):
+        with mock.patch("houdini_mcp_bridge.sidefx_docs._windows_install_roots", return_value=[]), mock.patch(
+            "houdini_mcp_bridge.sidefx_docs._mac_install_roots", return_value=[]
+        ), mock.patch("houdini_mcp_bridge.sidefx_docs._linux_install_roots", return_value=[]):
             provider = SideFXDocsProvider(help_root=None, environment={}, houdini_info={})
             self.assertEqual(provider.status, "degraded")
             self.assertEqual(provider.search("box"), [])
