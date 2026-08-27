@@ -1171,7 +1171,7 @@ class HoudiniMCPServer:
                 template.setName(promotion["name"])
                 template.setLabel(promotion["label"])
                 self._append_hda_template(group, template, promotion.get("folder"))
-            definition.setParmTemplateGroup(group)
+            definition.setParmTemplateGroup(group, create_backup=False)
             instance.matchCurrentDefinition()
             instance.allowEditingOfContents()
             for promotion in validated:
@@ -1287,7 +1287,7 @@ class HoudiniMCPServer:
                 if promotion.get("label"):
                     template.setLabel(promotion["label"])
                 self._append_hda_template(group, template, promotion.get("folder"))
-            definition.setParmTemplateGroup(group)
+            definition.setParmTemplateGroup(group, create_backup=False)
             for promotion in normalized_promotions:
                 suffix = promotion["source_node"].split(path + "/", 1)[-1]
                 source = self._resolve_node(asset.path() + "/" + suffix)

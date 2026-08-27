@@ -59,7 +59,7 @@ assert "overwrite channel" in protected["message"].lower(), protected
 call("set_parameters", {"path": box_path, "parameters": {"size": [1, 1, 1]}, "overwrite_channel": True})
 print("  PASS  channel overwrite protection and explicit override")
 
-with tempfile.TemporaryDirectory() as temp_dir:
+with tempfile.TemporaryDirectory(prefix="houdini_mcp_", dir=os.path.dirname(os.path.abspath(__file__))) as temp_dir:
     library_path = os.path.join(temp_dir, "mcp_verified_asset.hda")
     try:
         create_args = {
