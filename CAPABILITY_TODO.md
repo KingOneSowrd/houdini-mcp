@@ -522,6 +522,7 @@ Skill 和模板 HIP 是生产工作流层，不替代 MCP 底层能力：
 - [x] 提供记录校验、成熟度评估、候选 Experience 创建和索引重建 CLI
 - [x] 将 Project Titan 提炼为 5 个候选证据记录和 8 个候选工作流 Recipe
 - [x] 为记录严格校验、工作流引用、晋升证据和索引一致性增加单元测试
+- [x] 提供由真实记录自动生成的离线知识图谱、工作流矩阵、证据追踪和人工干预视图
 - [ ] 在真实 MCP 制作任务结束时自动生成操作、修正、验收和产物 Experience Record
 - [ ] 基于多个独立案例和真实执行记录，将候选 Recipe 晋升为 validated/canonical
 - [ ] 为首个已验证 Recipe 制作带 Manifest、惰性 Cook 和 Hython Smoke Test 的模板 HIP

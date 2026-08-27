@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .uv-cache*/
+skills/houdini-production-workflows/dashboard/generated/
 
 # Environment files (may contain API keys)
 *.env

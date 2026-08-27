@@ -56,4 +56,4 @@ Use [workflow-index.json](references/workflow-index.json) for machine-readable r
 
 ## Experience automation
 
-Run `scripts/inspect_houdini_case.py` under Hython to produce a bounded candidate record from a HIP or HDA without saving or exporting it. Run `scripts/experience_cli.py validate` before committing records, `reindex` after record changes, and `assess` to see what evidence is still missing. Generated records remain `candidate` until verified across their declared scope.
+Run `scripts/inspect_houdini_case.py` under Hython to produce a bounded candidate record from a HIP or HDA without saving or exporting it. Run `scripts/experience_cli.py validate` before committing records, `reindex` after record changes, and `assess` to see what evidence is still missing. `reindex` also refreshes the generated offline knowledge dashboard; use `dashboard --open` to rebuild and open it directly. Generated records remain `candidate` until verified across their declared scope.

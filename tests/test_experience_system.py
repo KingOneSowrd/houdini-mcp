@@ -1,6 +1,7 @@
 import argparse
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = REPO_ROOT / "skills" / "houdini-production-workflows"
 CLI_PATH = SKILL_ROOT / "scripts" / "experience_cli.py"
+DASHBOARD_PATH = SKILL_ROOT / "scripts" / "build_dashboard.py"
 
 
 def load_cli_module():
@@ -19,10 +21,22 @@ def load_cli_module():
     return module
 
 
+def load_dashboard_module():
+    scripts_path = str(SKILL_ROOT / "scripts")
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
+    spec = importlib.util.spec_from_file_location("houdini_knowledge_dashboard", DASHBOARD_PATH)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 class ExperienceSystemTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cli = load_cli_module()
+        cls.dashboard = load_dashboard_module()
 
     def test_all_curated_records_validate(self):
         paths = self.cli.discover_record_paths()
@@ -93,6 +107,38 @@ class ExperienceSystemTests(unittest.TestCase):
         }
         indexed = {entry["id"] for entry in index["records"]}
         self.assertEqual(indexed, discovered)
+
+    def test_dashboard_model_has_valid_graph_and_real_counts(self):
+        model = self.dashboard.build_model()
+        node_ids = {node["data"]["id"] for node in model["nodes"]}
+        self.assertEqual(model["stats"]["workflows"], 8)
+        self.assertEqual(model["stats"]["records"], len(self.cli.discover_record_paths()))
+        self.assertEqual(model["stats"]["cases"], 5)
+        self.assertEqual(model["stats"]["recipes"], 8)
+        self.assertGreater(model["stats"]["evidence_gaps"], 0)
+        for edge in model["edges"]:
+            self.assertIn(edge["data"]["source"], node_ids)
+            self.assertIn(edge["data"]["target"], node_ids)
+
+    def test_dashboard_render_is_self_contained(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "knowledge.html"
+            rendered = self.dashboard.render_dashboard(output)
+            content = rendered.read_text(encoding="utf-8")
+            self.assertGreater(rendered.stat().st_size, 400_000)
+            self.assertNotIn("__KNOWLEDGE_MODEL__", content)
+            self.assertNotIn("/*__CYTOSCAPE_BUNDLE__*/", content)
+            self.assertNotIn('src="http', content)
+            self.assertNotIn("fetch(", content)
+            self.assertIn("project-titan-curve-modules", content)
+            self.assertIn("cytoscape", content)
+
+    def test_dashboard_cli_builds_requested_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "cli-dashboard.html"
+            result = self.cli.main(["dashboard", "--output", str(output)])
+            self.assertEqual(result, 0)
+            self.assertTrue(output.is_file())
 
 
 if __name__ == "__main__":

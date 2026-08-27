@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import Any
 
 
-SKILL_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_ROOT = Path(__file__).resolve().parent
+SKILL_ROOT = SCRIPT_ROOT.parent
 REFERENCE_ROOT = SKILL_ROOT / "references"
 SCHEMA_ROOT = REFERENCE_ROOT / "schemas"
 RECORD_ROOT = REFERENCE_ROOT / "records"
@@ -22,6 +23,9 @@ SCHEMAS = {
     "experience": SCHEMA_ROOT / "experience.schema.json",
     "template_manifest": SCHEMA_ROOT / "template-manifest.schema.json",
 }
+
+if str(SCRIPT_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_ROOT))
 
 
 def load_json(path: Path) -> Any:
@@ -252,7 +256,19 @@ def build_parser() -> argparse.ArgumentParser:
     assess = subparsers.add_parser("assess", help="report evidence missing for promotion")
     assess.add_argument("paths", nargs="*", type=Path)
 
-    subparsers.add_parser("reindex", help="rebuild the deterministic record index")
+    reindex = subparsers.add_parser(
+        "reindex",
+        help="rebuild the deterministic record index and generated dashboard",
+    )
+    reindex.add_argument(
+        "--no-dashboard",
+        action="store_true",
+        help="skip rebuilding the generated knowledge dashboard",
+    )
+
+    dashboard = subparsers.add_parser("dashboard", help="build the offline knowledge dashboard")
+    dashboard.add_argument("--output", type=Path)
+    dashboard.add_argument("--open", action="store_true", dest="open_browser")
 
     create = subparsers.add_parser("new-experience", help="create a candidate execution record")
     create.add_argument("--goal", required=True)
@@ -284,6 +300,20 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "reindex":
         print(rebuild_index())
+        if not args.no_dashboard:
+            from build_dashboard import DEFAULT_OUTPUT, render_dashboard
+
+            print(render_dashboard(DEFAULT_OUTPUT))
+        return 0
+    if args.command == "dashboard":
+        from build_dashboard import DEFAULT_OUTPUT, render_dashboard
+
+        output = render_dashboard(args.output or DEFAULT_OUTPUT)
+        print(output)
+        if args.open_browser:
+            import webbrowser
+
+            webbrowser.open(output.as_uri())
         return 0
     if args.command == "new-experience":
         print(new_experience(args))

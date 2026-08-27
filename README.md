@@ -31,8 +31,9 @@ houdini-mcp/
 ├── skills/
 │   └── houdini-production-workflows/
 │       ├── SKILL.md            # Production routing and execution policy
+│       ├── dashboard/          # Offline generated knowledge graph source
 │       ├── references/         # Contracts, workflows, cases, and records
-│       └── scripts/            # Case ingestion and experience validation
+│       └── scripts/            # Ingestion, validation, and dashboard build
 ├── tests/
 │   ├── headless_host.py        # hython integration-test host
 │   ├── test_tools.py           # Original/live Houdini capability tests
@@ -77,6 +78,7 @@ Useful maintenance commands:
 python skills/houdini-production-workflows/scripts/experience_cli.py validate
 python skills/houdini-production-workflows/scripts/experience_cli.py assess
 python skills/houdini-production-workflows/scripts/experience_cli.py reindex
+python skills/houdini-production-workflows/scripts/experience_cli.py dashboard --open
 
 # Run with the active Houdini installation's hython executable.
 hython skills/houdini-production-workflows/scripts/inspect_houdini_case.py `<case.hip-or-hda>` --source-root `<portable-root>` --output `<candidate.json>`
@@ -87,6 +89,14 @@ or export. Its output is always a candidate case with acceptance left false.
 Review and validate evidence before promoting any record. Binary HIP/HDA
 templates will be added only when a real recipe has a safe, reusable skeleton;
 the skill does not ship empty placeholder templates.
+
+`reindex` also regenerates a self-contained, offline dashboard at
+`skills/houdini-production-workflows/dashboard/generated/houdini-knowledge-dashboard.html`.
+The dashboard projects the validated records into an interactive relationship
+graph, workflow matrix, Recipe evidence view, and correction hot spots. It is a
+read-only generated view; JSON and Markdown records remain the only knowledge
+source. Cytoscape.js 3.34.2 is vendored under its MIT license so the dashboard
+does not require a network connection.
 
 ## Hybrid tool catalog
 
