@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "record_type": "recipe",
+  "id": "hda-authoring-v1",
+  "title": "可调 HDA 与嵌入式算法交付",
+  "status": "candidate",
+  "workflow": "hda-authoring",
+  "summary": "从 Hair Tangent Baker 成功案例提炼：参数化算法、原始输入保护、默认兼容、显式烘焙与版本验收。单项目候选方法，尚未独立执行或跨项目验证。",
+  "applicability": {
+    "use_when": [
+      "Delivering a reusable artist-facing HDA with parameterized algorithms and optional explicit bake/export commands"
+    ],
+    "avoid_when": [
+      "A bounded scene edit does not need an HDA",
+      "Treating this hair-specific algorithm as a general mesh/texture solution"
+    ]
+  },
+  "scope": {
+    "houdini_versions": [
+      "21.0.440 (source evidence only; discover target version)"
+    ],
+    "engines": [],
+    "projects": [
+      "hair-tangent-baker"
+    ]
+  },
+  "inputs": [
+    "Declared geometry/texture contracts and target Houdini version",
+    "Artist control requirements and acceptance criteria",
+    "Existing instance values and definition version when upgrading"
+  ],
+  "stages": [
+    "Discover input/output and effect boundaries",
+    "Choose native nodes, VEX or embedded Python by product needs and maintainability",
+    "Expose semantic controls and neutral defaults",
+    "Separate preserved input, working geometry and preview",
+    "Implement explicit bake/export with validation, staged unique outputs and cancellation",
+    "Test default equivalence and parameter behavior",
+    "Test actual delivered definition and fresh reopen",
+    "Record version-specific outcomes and engine acceptance separately"
+  ],
+  "outputs": [
+    "Reusable HDA with declared dependencies",
+    "Named outputs and artist controls",
+    "Version-scoped acceptance reports and completed batch manifests"
+  ],
+  "side_effects": {
+    "scene_mutation": true,
+    "expensive_cook": true,
+    "file_write": true,
+    "external_asset_write": true
+  },
+  "acceptance": [
+    "Neutral controls preserve the baseline within the declared exact/tolerance contract",
+    "Artist parameters affect their intended output",
+    "Original-input preservation and mode-specific UV/topology contracts pass",
+    "Ordinary evaluation does not implicitly publish bake/export files",
+    "Failure/cancellation preserves last valid results",
+    "Delivered modules match intended sources and fresh instantiation/reopen passes",
+    "Independent target-engine check when the task requires it"
+  ],
+  "rollback": [
+    "Preserve versioned asset and HIP backups before authorized writes",
+    "Use Undo for supported scene changes; restore definitions/files separately",
+    "Discard only the failed staging batch; retain published valid outputs"
+  ],
+  "evidence": {
+    "case_ids": [
+      "hair-tangent-baker-2-11-success"
+    ],
+    "experience_ids": [
+      "exp-hair-tangent-baker-2-11-success"
+    ],
+    "last_verified": ""
+  },
+  "tags": [
+    "hda",
+    "embedded-python",
+    "artist-controls",
+    "successful-source",
+    "candidate-generalization"
+  ]
+}

@@ -114,17 +114,35 @@ class ExperienceSystemTests(unittest.TestCase):
     def test_dashboard_model_has_valid_graph_and_real_counts(self):
         model = self.dashboard.build_model()
         node_ids = {node["data"]["id"] for node in model["nodes"]}
-        self.assertEqual(model["stats"]["workflows"], 8)
+        workflows = self.cli.load_json(SKILL_ROOT / "references" / "workflow-index.json")["workflows"]
+        records = [self.cli.load_json(path) for path in self.cli.discover_record_paths()]
+        self.assertEqual(model["stats"]["workflows"], len(workflows))
         self.assertEqual(model["stats"]["records"], len(self.cli.discover_record_paths()))
-        self.assertEqual(model["stats"]["cases"], 5)
-        self.assertEqual(model["stats"]["recipes"], 8)
+        for kind, key in (("case", "cases"), ("recipe", "recipes"), ("experience", "experiences")):
+            self.assertEqual(model["stats"][key], sum(record["record_type"] == kind for record in records))
+        self.assertEqual(model["warnings"], [])
         self.assertGreater(model["stats"]["evidence_gaps"], 0)
         for edge in model["edges"]:
             self.assertIn(edge["data"]["source"], node_ids)
             self.assertIn(edge["data"]["target"], node_ids)
             self.assertIn(edge["data"]["tier"], {"spine", "evidence", "context"})
         spine_edges = [edge for edge in model["edges"] if edge["data"]["tier"] == "spine"]
-        self.assertEqual(len(spine_edges), 8)
+        self.assertEqual(len(spine_edges), sum(record["record_type"] in {"recipe", "template_manifest"} for record in records))
+
+    def test_successful_retrospective_is_linked_without_claiming_a_new_recipe_run(self):
+        record_root = SKILL_ROOT / "references" / "records"
+        experience = self.cli.load_json(record_root / "experiences" / "exp-hair-tangent-baker-2-11-success.json")
+        recipe = self.cli.load_json(record_root / "recipes" / "hda-authoring-v1.json")
+        case = self.cli.load_json(record_root / "cases" / "hair-tangent-baker-2-11-success.json")
+        self.assertEqual(experience["acceptance"]["metrics"]["outcome"], "user_accepted_success")
+        self.assertEqual(experience["provenance"]["case_ids"], [case["id"]])
+        self.assertIn(experience["id"], recipe["evidence"]["experience_ids"])
+        self.assertEqual(experience["provenance"]["recipe_id"], "")
+        self.assertEqual(experience["operations"], [])
+        self.assertFalse(case["acceptance"]["verified"])
+        self.assertEqual(recipe["status"], "candidate")
+        self.assertEqual(recipe["evidence"]["last_verified"], "")
+        self.assertIn("at least two independent cases", self.cli.assessment(recipe)["missing_evidence"])
 
     def test_dashboard_render_is_self_contained(self):
         with tempfile.TemporaryDirectory() as temporary:

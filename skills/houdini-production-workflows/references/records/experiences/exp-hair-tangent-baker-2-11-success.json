@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "record_type": "experience",
+  "id": "exp-hair-tangent-baker-2-11-success",
+  "status": "candidate",
+  "workflow": "hda-authoring",
+  "goal": "成功经验：Hair Tangent Baker 2.11 的可调 HDA 交付（用户认可；历史证据回顾）",
+  "created_at": "2026-11-04T08:27:33Z",
+  "environment": {
+    "houdini": "21.0.440 / Python 3.11 (historical reports)",
+    "sidefx_labs": "not required",
+    "engine": "Unreal appearance not independently verified",
+    "project": "hair-tangent-baker",
+    "hip": "Hair_Tangent_Baker_HDA/hair_tangent_baker_dev.hip"
+  },
+  "inputs": [
+    "Retrospective intake of one existing project; not a new execution",
+    "Case hair-tangent-baker-2-11-success",
+    "User explicitly accepted this as a successful experience on 2026-11-04"
+  ],
+  "decisions": [
+    "Preserve Python algorithms as versioned embedded HDA modules with explicit interfaces.",
+    "Use native controls and ramps to expose artist intent.",
+    "Keep original input output available and mode-specific topology/UV contracts explicit.",
+    "Separate ordinary SOP evaluation, preview and explicit expensive publication.",
+    "Stage batches and publish only complete results; keep base inputs independent of result paths.",
+    "Preserve neutral defaults, instance settings and factory-default boundaries during upgrades.",
+    "Retrospectively extracted guidance supports hda-authoring-v1; the original project did not execute that newly authored recipe.",
+    "This Experience and its Case are the same source, not independent evidence."
+  ],
+  "operations": [],
+  "corrections": [],
+  "outputs": [
+    "Hair_Tangent_Baker_HDA/hda/Mahua_Hair_Tangent_Baker_2.0.hda",
+    "Hair_Tangent_Baker_HDA/hair_tangent_baker_dev.hip",
+    "Version-specific historical diagnostics and reports"
+  ],
+  "acceptance": {
+    "passed": [
+      "User accepted the HDA result as successful (2026-11-04).",
+      "Historical amplitude_profile_unit_report.json reports 100 tests, 0 failures, 0 errors.",
+      "Historical 2.11.0 amplitude_profile_hython_report.json reports neutral geometry exact, source unchanged, native ramps and reset, and fresh external HDA/HIP reopen.",
+      "Historical 2.11.0 isolated 512 bakes report finite vectors, byte-exact black Mask, and zero overlap-conflict pixels for the tested inputs.",
+      "Historical hip_entry_validation.json reports parameters, expressions, curves, layout and geometry preserved after entry organization."
+    ],
+    "failed": [],
+    "skipped": [
+      "Fresh replay of the current source/HDA snapshot was not performed during this retrospective intake.",
+      "Latest development package release acceptance remains pending per tools/README.md.",
+      "Independent Unreal lighting acceptance was not performed; seam/flow limitations remain recorded."
+    ],
+    "metrics": {
+      "outcome": "user_accepted_success",
+      "evidence_mode": "retrospective_report_review",
+      "historical_unit_tests": "100",
+      "historical_unit_failures": "0",
+      "historical_unit_errors": "0",
+      "historical_bake_resolution": "512",
+      "functional_version": "2.11.0",
+      "independent_source_projects": "1",
+      "operation_history": "Unavailable; operations and corrections intentionally empty rather than fabricated.",
+      "evidence_ref": "case:hair-tangent-baker-2-11-success"
+    }
+  },
+  "provenance": {
+    "recipe_id": "",
+    "case_ids": [
+      "hair-tangent-baker-2-11-success"
+    ],
+    "created_by": "Agent retrospective curation, user-confirmed success; created_at is intake time, not original execution time",
+    "supersedes": ""
+  },
+  "tags": [
+    "success",
+    "user-accepted",
+    "retrospective",
+    "embedded-python",
+    "hda",
+    "version-scoped-evidence"
+  ]
+}

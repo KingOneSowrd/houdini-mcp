@@ -48,6 +48,11 @@
       "reference": "workflows/pivot-painter.md",
       "icon": "SHELF/tree_deciduous",
       "signals": ["pivot painter", "pivotpainter", "hierarchy", "tree", "parent index", "wind"]
+    },
+    {
+      "id": "hda-authoring",
+      "reference": "workflows/hda-authoring.md",
+      "signals": ["hda authoring", "hda delivery", "embedded python", "artist controls", "tangent baker", "HDA交付", "可调HDA", "嵌入式算法"]
     }
   ]
 }

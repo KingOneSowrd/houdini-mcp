@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "hair-tangent-baker-2-11-success",
+  "title": "Hair Tangent Baker 2.11 — 用户认可的成功 HDA",
+  "status": "candidate",
+  "summary": "成功交付：嵌入式 Python 算法通过原生参数、Ramp、SOP 与显式烘焙入口形成可复用 HDA；用户于 2026-11-04 确认成功。历史报告支持所列版本范围，本轮为资料审阅，未重跑生产验收。",
+  "source": {
+    "kind": "production",
+    "locator": "Hair_Tangent_Baker_HDA/",
+    "fingerprint": "sha256:60ad0bb1b70a5bc0f3fc8443911407f2c389f2fd99a57aedaa5832bfc48485ed",
+    "notes": "Locator is relative to the user-supplied project collection. Fingerprint hashes the sorted source-file SHA256 mapping in references/cases/hair-tangent-baker.md. Reviewed snapshots do not establish that historical reports tested the current binary."
+  },
+  "environment": {
+    "houdini_versions": [
+      "21.0.440 (reported)"
+    ],
+    "sidefx_labs_versions": [],
+    "engines": [],
+    "license_modes": [
+      "Houdini FX (reported)"
+    ]
+  },
+  "scope": {
+    "workflows": [
+      "hda-authoring"
+    ],
+    "domains": [
+      "sop",
+      "hda",
+      "texture-baking"
+    ],
+    "projects": [
+      "hair-tangent-baker"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "Artist mesh",
+      "domain": "Sop",
+      "contract": "Unpacked polygons with finite P, matching point/vertex float3 UV; Normal + Mesh also requires valid N."
+    },
+    {
+      "name": "Normal / Mask / optional base Tangent",
+      "domain": "texture",
+      "contract": "Matching single atlas; explicit DX/GL convention; black Mask preserves the base."
+    }
+  ],
+  "observations": {
+    "node_count": 0,
+    "node_type_counts": {},
+    "top_nodes": [
+      "/obj/ARTIST_BRAID_BAKE/hair_tangent_baker (documented entry)"
+    ],
+    "external_references": [
+      "NumPy and Pillow in the tested Houdini Python environment",
+      "Project-relative assets and exports"
+    ],
+    "sticky_notes": [],
+    "stages": [
+      "Validate inputs",
+      "Evaluate parameterized reconstruction/deformation",
+      "Preview working mesh",
+      "Explicit bake with diagnostics",
+      "Publish a complete unique batch",
+      "Explicit matching model export and acceptance"
+    ],
+    "contracts": [
+      "Original artist output preserved",
+      "Neutral ramps preserve prior output exactly in reported 2.11 tests",
+      "Cook does not implicitly publish texture bakes or exports",
+      "Base input remains separate from last successful result",
+      "Version-scoped regression and reopen evidence"
+    ],
+    "limitations": [
+      "node_count=0 is a schema placeholder for not inventoried, not an empty HDA; no live graph inspection occurred.",
+      "Candidate maturity is separate from user-accepted successful outcome.",
+      "No new Hython run, production bake, export or engine check was performed during ingestion.",
+      "Standalone report is 2.4.0, not proof of all 2.11.0 behavior.",
+      "Latest development package acceptance is pending; historical reports are not a current-binary certificate.",
+      "UV seams and local automatic-flow sign discontinuities remain; shared UV directions can conflict; no UDIM."
+    ]
+  },
+  "outputs": [
+    {
+      "product": "Reusable artist-facing HDA",
+      "path_contract": "hda/Mahua_Hair_Tangent_Baker_2.0.hda",
+      "attributes": []
+    },
+    {
+      "product": "Original and working mesh outputs",
+      "path_contract": "Named outputs documented in reports/entrypoints.json",
+      "attributes": [
+        "P",
+        "N",
+        "uv"
+      ]
+    },
+    {
+      "product": "Tangent texture and diagnostics",
+      "path_contract": "Unique completed batch under configured output directory",
+      "attributes": []
+    }
+  ],
+  "acceptance": {
+    "verified": false,
+    "checks": [
+      "Review embedded/runtime source parity for target release",
+      "Repeat neutral and parameter-response acceptance",
+      "Verify fresh locked definition and HIP reopen",
+      "Validate explicit write and cancellation boundaries",
+      "Verify target engine appearance when required"
+    ],
+    "evidence": [
+      "Hair_Tangent_Baker_HDA/hair_tangent_baker_dev.hip [sha256:6c79b4f3d83b00edb8141782caa2dc9c1ddbe6bda1c23bfef5bbf5959ac04551]",
+      "Hair_Tangent_Baker_HDA/hda/Mahua_Hair_Tangent_Baker_2.0.hda [sha256:ed9731ea3e1205b2f72f494b1102803b59efc2b3f8bdaf8d9571831370c22122]",
+      "Hair_Tangent_Baker_HDA/reports/amplitude_profile_unit_report.json [sha256:86de99a5dad25dc2800c19778ddd185bd511fe033eb95b47e62f3a44d5fe98f4]",
+      "Hair_Tangent_Baker_HDA/reports/amplitude_profile_hython_report.json [sha256:e8a868fca4f717afecf874af52afd003e75f2e528dafe7570f90bbc9e8455fa2]",
+      "Hair_Tangent_Baker_HDA/reports/hip_entry_validation.json [sha256:ceb8464af5d5b5c3c7faa87b690419590f7beef5fb30b469bde3257f5a171d67]",
+      "Hair_Tangent_Baker_HDA/reports/standalone_report.json [sha256:3edb026270e8992dbe70f04852aebf7325f84f864bd605e0ea33567fcadd61ee]",
+      "Hair_Tangent_Baker_HDA/reports/portable_report.json [sha256:d0094548b5dfd063da641c775a2d5aef39be0de295808b0fd5a880e31f2c6ac8]",
+      "Hair_Tangent_Baker_HDA/reports/texture_seam_diagnostic.json [sha256:a962c43e8b2d67474c80184a7748acb3829dd78b92de95424db4a2766980114e]",
+      "Hair_Tangent_Baker_HDA/tools/python_module.py [sha256:ecf9ebbb722544321b9f3f8dc9fb6c50d736459b423fd652b9c18a72a05e2fb0]",
+      "Hair_Tangent_Baker_HDA/src/hair_tangent_baker/shape_adapter.py [sha256:ad8aeb7c6300916fe1aff0f1f76418e60d8b105f35ebd32545cbe09ca7b60963]",
+      "Hair_Tangent_Baker_HDA/src/hair_tangent_baker/houdini_adapter.py [sha256:647be07edb308b018a550797146e6740044f0fcf76a1b0594b011bf4dba3beb5]",
+      "Hair_Tangent_Baker_HDA/src/hair_tangent_baker/baker.py [sha256:d23511c87d4eb76a241cfcdbc6667407b7f9347409aee1b1360fa2fd0035e3c8]",
+      "Hair_Tangent_Baker_HDA/tools/README.md [sha256:57c7de73f75e82ab0fdc0b3a9e8546eadbd6e4dc60c605f6b27875e07153923b]",
+      "User confirmation in intake conversation, 2026-11-04: 这次是个成功经验"
+    ]
+  },
+  "provenance": {
+    "created_at": "2026-11-04T08:27:33Z",
+    "created_by": "Agent source/report review and explicit user success confirmation; no live execution",
+    "supersedes": ""
+  },
+  "tags": [
+    "success",
+    "user-accepted",
+    "retrospective",
+    "hda",
+    "embedded-python",
+    "artist-controls",
+    "tangent-baking"
+  ]
+}

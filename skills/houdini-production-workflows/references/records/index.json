@@ -2,6 +2,13 @@
   "schema_version": 1,
   "records": [
     {
+      "id": "hair-tangent-baker-2-11-success",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/hair-tangent-baker-2-11-success.json"
+    },
+    {
       "id": "project-titan-curve-modules",
       "record_type": "case",
       "status": "candidate",
@@ -37,11 +44,25 @@
       "path": "records/cases/project-titan-surface-growth.json"
     },
     {
+      "id": "exp-hair-tangent-baker-2-11-success",
+      "record_type": "experience",
+      "status": "candidate",
+      "workflow": "hda-authoring",
+      "path": "records/experiences/exp-hair-tangent-baker-2-11-success.json"
+    },
+    {
       "id": "curve-instancing-v1",
       "record_type": "recipe",
       "status": "candidate",
       "workflow": "curve-instancing",
       "path": "records/recipes/curve-instancing-v1.json"
+    },
+    {
+      "id": "hda-authoring-v1",
+      "record_type": "recipe",
+      "status": "candidate",
+      "workflow": "hda-authoring",
+      "path": "records/recipes/hda-authoring-v1.json"
     },
     {
       "id": "modular-generation-v1",

@@ -12,6 +12,7 @@ Choose one primary workflow by the requested product and dominant expensive stag
 | Smoke texture production | `pyro-flipbook` | none unless the user requests scene rendering |
 | Character or simulation playback in-engine | `realtime-animation` | `rbd-destruction` for rigid VAT sources |
 | Hierarchical vegetation deformation | `pivot-painter` | `surface-growth` for source generation |
+| Reusable artist-facing HDA, embedded algorithms, bake/export delivery | `hda-authoring` | product-specific workflow when needed |
 
 Do not force a workflow route for scene inspection, a single parameter edit, documentation lookup, MCP server development, or an unrelated rendering task.
 
