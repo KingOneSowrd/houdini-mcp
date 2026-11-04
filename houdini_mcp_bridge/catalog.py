@@ -217,21 +217,21 @@ class GeometryDataArgs(ToolArguments):
 class RenderSingleArgs(ToolArguments):
     orthographic: bool = False
     rotation: List[float] = Field(default_factory=lambda: [0, 90, 0])
-    render_path: str = "C:/temp/"
+    render_path: Optional[str] = None
     render_engine: str = "opengl"
     karma_engine: str = "cpu"
 
 
 class RenderQuadArgs(ToolArguments):
     orthographic: bool = True
-    render_path: str = "C:/temp/"
+    render_path: Optional[str] = None
     render_engine: str = "opengl"
     karma_engine: str = "cpu"
 
 
 class RenderCameraArgs(ToolArguments):
     camera_path: str
-    render_path: str = "C:/temp/"
+    render_path: Optional[str] = None
     render_engine: str = "opengl"
     karma_engine: str = "cpu"
 

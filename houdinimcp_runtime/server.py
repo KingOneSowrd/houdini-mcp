@@ -308,6 +308,9 @@ class HoudiniMCPServer:
         "set_parameters", "set_node_flags", "layout_children",
         "create_wrangle", "set_wrangle_code",
         "create_hda_from_subnetwork", "apply_hda_interface_patch", "apply_graph_patch",
+        # Arbitrary Python is the least predictable mutation; it must still be
+        # a single Ctrl+Z step. Read-only code leaves no Undo entry.
+        "execute_code",
     })
 
     @contextmanager
@@ -415,17 +418,22 @@ class HoudiniMCPServer:
             node = parent.createNode(node_type, node_name=name)
             if position and len(position) >= 2:
                 node.setPosition([position[0], position[1]])
+            applied = []
             if parameters:
-                for p_name, p_val in parameters.items():
-                    parm = node.parm(p_name)
-                    if parm:
-                        parm.set(p_val)
+                # Same validation as set_parameters (tuples, menus, channel
+                # protection). Never leave a half-configured node behind.
+                try:
+                    applied = self.set_parameters(node.path(), parameters)["set"]
+                except Exception:
+                    node.destroy()
+                    raise
 
             return {
                 "name": node.name(),
                 "path": node.path(),
                 "type": node.type().name(),
                 "position": list(node.position()),
+                "parameters_set": [item["name"] for item in applied],
             }
         except Exception as e:
             raise Exception(f"Failed to create node: {str(e)}")

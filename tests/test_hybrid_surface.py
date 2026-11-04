@@ -100,6 +100,31 @@ class HybridSurfaceTests(unittest.TestCase):
         parameter = inspect.signature(__import__("houdini_mcp_server").execute_houdini_code).parameters["allow_unsafe"]
         self.assertIs(parameter.default, False)
 
+    def test_server_instructions_steer_to_typed_graph_tools(self):
+        bridge = __import__("houdini_mcp_server")
+        instructions = bridge.mcp.instructions
+        self.assertTrue(instructions)
+        registry = build_registry(lambda command, args: {"status": "success", "result": {}})
+        for tool in ("get_network_snapshot", "apply_graph_patch", "execute_houdini_code"):
+            self.assertIn(tool, instructions)
+            self.assertIn(tool, registry.names())
+        self.assertIn("ch()", instructions)
+
+    def test_direct_create_node_accepts_parameters_and_position(self):
+        parameters = inspect.signature(__import__("houdini_mcp_server").create_node).parameters
+        self.assertIn("parameters", parameters)
+        self.assertIn("position", parameters)
+
+    def test_render_paths_have_no_platform_specific_default(self):
+        registry = build_registry(lambda command, args: {"status": "success", "result": {}})
+        for name in ("render_single_view", "render_quad_views", "render_specific_camera"):
+            schema = registry.get(name).arguments_model.model_json_schema()
+            self.assertIsNone(schema["properties"]["render_path"].get("default"), name)
+        bridge = __import__("houdini_mcp_server")
+        for name in ("render_single_view", "render_quad_views", "render_specific_camera"):
+            default = inspect.signature(getattr(bridge, name)).parameters["render_path"].default
+            self.assertIsNone(default, name)
+
 
 if __name__ == "__main__":
     unittest.main()

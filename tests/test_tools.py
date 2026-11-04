@@ -136,9 +136,38 @@ send("get_geometry_data", {"path": xform["path"], "attributes": ["nope"]},
      expect_error=True)
 ok("get_geometry_data: values, pagination, prims, unknown-attrib error")
 
+# -- execute_code: arbitrary Python is one Undo step; read-only code adds none --
+UNDO_COUNT = "print(len(hou.undos.undoLabels()))"
+before = int(send("execute_code", {"code": UNDO_COUNT})["stdout"].strip())
+send("execute_code", {"code": (
+    "g = hou.node('%s')\n"
+    "a = g.createNode('box', 'py_box')\n"
+    "b = g.createNode('null', 'py_out')\n"
+    "b.setInput(0, a)\n" % CONTAINER)})
+after = int(send("execute_code", {"code": UNDO_COUNT})["stdout"].strip())
+assert after == before + 1, (before, after)
+top = send("execute_code", {"code": "print(hou.undos.undoLabels()[0])"})["stdout"].strip()
+assert top == "MCP: execute_code", top
+send("delete_node", {"path": CONTAINER + "/py_out"})
+send("delete_node", {"path": CONTAINER + "/py_box"})
+ok("execute_code: mutation is a single 'MCP: execute_code' Undo step")
+
 # -- bridge-layer helper (_houdini_call through real MCP tool functions) --------
 bridge._houdini_port = PORT
 bridge._houdini_connection = None
+text = bridge.create_node(None, "box", CONTAINER, name="direct_box",
+                          position=[3.0, -2.0], parameters={"size": [2, 3, 4]})
+assert text.startswith("Node created"), text
+r = bridge.get_parameter_schema(None, CONTAINER + "/direct_box", pattern="size")
+assert r["status"] == "success" and r["result"]["parameters"][0]["value"] == [2.0, 3.0, 4.0], r
+r = bridge._houdini_call("get_node_info", {"path": CONTAINER + "/direct_box"})
+assert r["status"] == "success" and list(r["result"]["position"]) == [3.0, -2.0], r
+bridge._houdini_call("delete_node", {"path": CONTAINER + "/direct_box"})
+text = bridge.create_node(None, "box", CONTAINER, name="bad_box", parameters={"sise": 1})
+assert text.startswith("Error") and "sise" in text, text
+r = bridge._houdini_call("get_node_info", {"path": CONTAINER + "/bad_box"})
+assert r["status"] == "error", r
+ok("direct create_node: name, position and parameters in one call; bad parm leaves no node")
 r = bridge.set_parameters(None, grid["path"], {"rows": 5})
 assert r["status"] == "success" and not r["result"]["failed"], r
 r = bridge.get_geometry_info(None, CONTAINER)

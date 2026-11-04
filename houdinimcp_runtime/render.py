@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import os
+import tempfile
 import hou
 
 def find_displayed_geometry():
@@ -345,7 +346,7 @@ def setup_render_node(render_engine="opengl", karma_engine="cpu", render_path=No
     Args:
         render_engine: The render engine to use ("opengl", "karma", or "mantra")
         karma_engine: For Karma, which engine to use ("cpu" or "gpu")
-        render_path: Path to save the render (default is C:\\temp\\)
+        render_path: Path to save the render (default: the platform temporary directory)
         camera_path: Path to the camera to use for rendering
         view_name: Optional name of the view (for filename)
         rotation: Camera rotation (for filename if view_name not provided)
@@ -357,7 +358,7 @@ def setup_render_node(render_engine="opengl", karma_engine="cpu", render_path=No
     try:
         # Set default render path if not specified
         if not render_path:
-            render_path = "C:/temp/"
+            render_path = tempfile.gettempdir()
         
         # Ensure directory exists
         if not os.path.exists(render_path):
@@ -495,7 +496,7 @@ def render_single_view(orthographic=False, rotation=(0, 90, 0), render_path=None
     Args:
         orthographic: If True, create an orthographic camera
         rotation: Tuple of (rx, ry, rz) rotation angles in degrees to apply to the camera center
-        render_path: Path to save the render (default is C:\\temp\\)
+        render_path: Path to save the render (default: the platform temporary directory)
         render_engine: The render engine to use ("opengl", "karma", or "mantra")
         karma_engine: For Karma, which engine to use ("cpu" or "gpu")
         
@@ -570,7 +571,7 @@ def render_quad_view(orthographic=True, render_path=None, render_engine="opengl"
     
     Args:
         orthographic: If True, use orthographic projection for ALL views including perspective
-        render_path: Path to save the renders (default is C:/temp/)
+        render_path: Path to save the renders (default: the platform temporary directory)
         render_engine: The render engine to use ("opengl", "karma", or "mantra")
         karma_engine: For Karma, which engine to use ("cpu" or "gpu")
     
@@ -665,7 +666,7 @@ def render_specific_camera(camera_path, render_path=None, render_engine="opengl"
     
     Args:
         camera_path: Path to the camera node (e.g., "/obj/mycamera")
-        render_path: Path to save the render (default is C:\\temp\\)
+        render_path: Path to save the render (default: the platform temporary directory)
         render_engine: The render engine to use ("opengl", "karma", or "mantra")
         karma_engine: For Karma, which engine to use ("cpu" or "gpu")
         
@@ -733,14 +734,14 @@ def render_specific_camera(camera_path, render_path=None, render_engine="opengl"
 # ======== EXAMPLE USAGE ========
 
 # Example 1: Render four standard views using orthographic projection with OpenGL
-# render_quad_view(orthographic=True, render_path="C:/temp/", render_engine="opengl")
+# render_quad_view(orthographic=True, render_path="$HIP/render/", render_engine="opengl")
 
 # Example 2: Render single view with custom rotation in perspective mode using Karma (GPU)
-# render_single_view(orthographic=False, rotation=(-30, 45, 0), render_path="C:/temp/",render_engine="karma", karma_engine="gpu")
+# render_single_view(orthographic=False, rotation=(-30, 45, 0), render_path="$HIP/render/",render_engine="karma", karma_engine="gpu")
 
 # Example 3: Render using a specific existing camera in the scene with Mantra
-# render_specific_camera("/obj/my_camera", render_path="C:/temp/", render_engine="mantra")
+# render_specific_camera("/obj/my_camera", render_path="$HIP/render/", render_engine="mantra")
 
 # Example 4: Render a quad view with perspective projection using Karma (CPU)
-# render_quad_view(orthographic=False, render_path="C:/temp/", 
+# render_quad_view(orthographic=False, render_path="$HIP/render/", 
 #                 render_engine="karma", karma_engine="cpu")

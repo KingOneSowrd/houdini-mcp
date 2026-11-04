@@ -578,8 +578,22 @@ def get_houdini_connection() -> HoudiniConnection:
 
 
 # Now define the MCP server that Claude will talk to over stdio
+# Client-agnostic workflow policy; clients that never load the production
+# skill still receive it. Keep it short: it is sent with every session.
+SERVER_INSTRUCTIONS = """\
+Houdini MCP builds procedural Houdini networks that artists must be able to read, edit and re-cook.
+
+1. Logic lives in the network. Deliver nodes, wires, parameters and VEX, never geometry computed outside the graph.
+2. Inspect before writing: get_network_snapshot (via call_tool) for the target network and its revision.
+3. Build with typed tools. For more than one or two edits use apply_graph_patch (via call_tool) so the change is validated and is one Undo step.
+4. Keep results editable: name key nodes, end each stage in an OUT_* null, expose tunable values (seed, counts, scale) as parameters, and use ch() in VEX instead of literal numbers.
+5. execute_houdini_code is a last resort. Use it only when no typed capability fits, say why, and never use it to write geometry, files or HIP state.
+6. A successful tool call is not completion: cook the output, check errors, and verify the geometry contract.
+Discover other capabilities with search_tools, then get_tool_schema, then call_tool."""
+
 mcp = FastMCP(
     "HoudiniMCP",
+    instructions=SERVER_INSTRUCTIONS,
     description="A bridging server that connects Claude to Houdini via MCP stdio + TCP, with OPUS API integration."
 )
 
@@ -646,14 +660,19 @@ def get_scene_info(ctx: Context) -> str:
         return f"Server Error retrieving scene info: {str(e)}"
 
 @mcp.tool()
-def create_node(ctx: Context, node_type: str, parent_path: str = "/obj", name: str = None) -> str:
+def create_node(ctx: Context, node_type: str, parent_path: str = "/obj", name: str = None,
+                position: List[float] = None, parameters: Dict[str, Any] = None) -> str:
     """
-    Create a new node in Houdini.
+    Create a new node in Houdini, optionally placing it and setting its
+    parameters in the same Undo step. Give key nodes a descriptive name.
+    For several connected nodes prefer apply_graph_patch via call_tool.
     """
     try:
         conn = get_houdini_connection()
         params = { "node_type": node_type, "parent_path": parent_path }
         if name: params["name"] = name
+        if position is not None: params["position"] = position
+        if parameters: params["parameters"] = parameters
         response = conn.send_command("create_node", params)
 
         if response.get("status") == "error":
@@ -907,7 +926,7 @@ def get_geometry_data(ctx: Context, path: str, element: str = "points",
 def render_single_view(ctx: Context,
                        orthographic: bool = False,
                        rotation: List[float] = [0, 90, 0],
-                       render_path: str = "C:/temp/",
+                       render_path: Optional[str] = None,
                        render_engine: str = "opengl",
                        karma_engine: str = "cpu") -> str:
     """
@@ -934,7 +953,7 @@ def render_single_view(ctx: Context,
 
 @legacy_tool()
 def render_quad_views(ctx: Context,
-                      render_path: str = "C:/temp/",
+                      render_path: Optional[str] = None,
                       render_engine: str = "opengl",
                       karma_engine: str = "cpu") -> str:
     """
@@ -960,7 +979,7 @@ def render_quad_views(ctx: Context,
 @legacy_tool()
 def render_specific_camera(ctx: Context,
                            camera_path: str,
-                           render_path: str = "C:/temp/",
+                           render_path: Optional[str] = None,
                            render_engine: str = "opengl",
                            karma_engine: str = "cpu") -> str:
     """
