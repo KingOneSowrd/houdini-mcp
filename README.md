@@ -105,6 +105,14 @@ evidence chain and opens its records in a Parameter Editor-style pane; the
 matrix views read like the Geometry Spreadsheet. `H` frames all nodes and `F`
 frames the selection.
 
+Node, workflow, and pane icons are Houdini's own. They are read in place from
+the local installation's `houdini/config/Icons/icons.zip` when the dashboard is
+built and embedded only in the git-ignored generated page; no SideFX icon is
+committed. Discovery checks `HOUDINI_MCP_ICON_ARCHIVE`, then `$HFS`/`$HH`, then
+the platform's Houdini installs. Without Houdini the dashboard falls back to
+colour chips. Workflow icons are named by the `icon` field in
+`references/workflow-index.json`.
+
 ## Hybrid tool catalog
 
 HoudiniMCP uses a compact, documented tool surface by default. Frequently used

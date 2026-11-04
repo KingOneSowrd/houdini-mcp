@@ -1,10 +1,13 @@
 import argparse
+import base64
 import importlib.util
 import json
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -145,6 +148,48 @@ class ExperienceSystemTests(unittest.TestCase):
             result = self.cli.main(["dashboard", "--output", str(output)])
             self.assertEqual(result, 0)
             self.assertTrue(output.is_file())
+
+    def test_houdini_icons_are_embedded_from_a_local_archive(self):
+        inkscape_svg = (
+            '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" '
+            'xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
+            'xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" '
+            'viewBox="0 0 16 16" sodipodi:docname="x.svg">'
+            '<sodipodi:namedview id="nv"><inkscape:page x="0" y="0"/></sodipodi:namedview>'
+            '<metadata><rdf/></metadata><rect inkscape:label="r" width="8" height="8"/></svg>'
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "icons.zip"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                bundle.writestr("BUTTONS/recipe.svg", inkscape_svg)
+                bundle.writestr("SOP/copytocurves.svg", inkscape_svg)
+            found = self.dashboard.discover_icon_archive({"HOUDINI_MCP_ICON_ARCHIVE": str(archive)})
+            self.assertEqual(found, archive)
+            workflows = [{"id": "curve-instancing", "icon": "SOP/copytocurves"}, {"id": "no-icon"}]
+            icons = self.dashboard.load_icons(workflows, found)
+
+        self.assertTrue(icons["available"])
+        self.assertEqual(set(icons["types"]), {"recipe"})
+        self.assertEqual(set(icons["workflows"]), {"curve-instancing"})
+        svg = base64.b64decode(icons["types"]["recipe"].split(",", 1)[1]).decode("utf-8")
+        ElementTree.fromstring(svg)  # still well-formed after removing editor data
+        for editor_data in ("namedview", "inkscape", "sodipodi", "metadata"):
+            self.assertNotIn(editor_data, svg)
+        self.assertIn("<rect", svg)
+
+    def test_dashboard_degrades_without_houdini_icons(self):
+        self.assertIsNone(self.dashboard.discover_icon_archive({}))
+        self.assertIsNone(self.dashboard.discover_icon_archive({"HOUDINI_MCP_ICON_ARCHIVE": "missing/icons.zip"}))
+        model = self.dashboard.build_model(icon_archive=None)
+        self.assertFalse(model["icons"]["available"])
+        with tempfile.TemporaryDirectory() as temporary:
+            rendered = self.dashboard.render_dashboard(Path(temporary) / "plain.html", icon_archive=None)
+            self.assertNotIn("data:image/svg+xml;base64", rendered.read_text(encoding="utf-8"))
+
+    def test_template_ships_no_sidefx_assets(self):
+        template = (SKILL_ROOT / "dashboard" / "index.template.html").read_text(encoding="utf-8")
+        self.assertNotIn("data:image/svg+xml;base64", template)
+        self.assertNotIn("icons.zip", template)
 
 
 if __name__ == "__main__":

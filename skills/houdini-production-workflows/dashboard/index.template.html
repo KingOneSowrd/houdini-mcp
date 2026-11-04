@@ -12,24 +12,25 @@
       Geometry Spreadsheet. One dark theme, because that is where TDs work.
     */
     :root {
-      --chrome: #26282b;
-      --pane: #303235;
-      --pane-raised: #393b3f;
-      --canvas: #3b3d41;
-      --grid-dot: #4b4e53;
-      --field: #222427;
-      --field-line: #1a1b1d;
-      --rule: #45484d;
-      --text: #dfe1e4;
-      --text-dim: #a9adb3;
-      --text-faint: #7d828a;
+      --chrome: #181818;
+      --pane: #222222;
+      --pane-raised: #2a2a2a;
+      --canvas: #1d1d1d;
+      --grid-dot: #2c2c2c;
+      --field: #131313;
+      --field-line: #0b0b0b;
+      --rule: #343434;
+      --hover: #333333;
+      --text: #d6d6d6;
+      --text-dim: #9d9d9d;
+      --text-faint: #6b6b6b;
       --select: #f2cc4a;
       --warn: #e88a3c;
       --flag-display: #3d82d6;
       --flag-bypass: #e2c13a;
-      --n-workflow: #3478c8;
+      --n-workflow: #2f6db3;
       --n-recipe: #2a9d8f;
-      --n-case: #8f9296;
+      --n-case: #7c7c7c;
       --n-experience: #5e9a2c;
       --n-template: #8d5bb0;
       --n-capability: #a77b45;
@@ -88,13 +89,20 @@
       white-space: nowrap;
     }
 
-    .pane-tab:hover { color: var(--text); background: #2c2e31; }
+    .pane-tab:hover { color: var(--text); background: var(--pane); }
 
     .pane-tab[aria-selected="true"] {
       color: var(--text);
       background: var(--pane);
       border-color: var(--rule);
     }
+
+    .hicon { flex: none; width: 16px; height: 16px; object-fit: contain; }
+    .hicon.large { width: 20px; height: 20px; }
+    .pane-tab, .app-name, .tool-button, .crumb:first-child { display: inline-flex; align-items: center; gap: 6px; }
+    .search .hicon { position: absolute; left: 6px; pointer-events: none; opacity: 0.85; }
+    .search.has-icon input { padding-left: 27px; }
+    .filter-icon { opacity: 0.8; }
 
     /* ---------- path bar + toolbar ---------- */
 
@@ -192,7 +200,7 @@
       cursor: pointer;
     }
 
-    .tool-button:hover, .menu:hover { background-color: #43464a; }
+    .tool-button:hover, .menu:hover { background-color: var(--hover); }
 
     /* ---------- views ---------- */
 
@@ -218,7 +226,6 @@
 
     .column-header {
       position: absolute;
-      top: 8px;
       transform: translateX(-50%);
       color: var(--text-faint);
       font-size: 12px;
@@ -252,7 +259,7 @@
       padding: 6px 10px;
       border: 1px solid var(--warn);
       border-radius: 3px;
-      background: #3a2c20;
+      background: #2a1f16;
       color: #f3c49a;
     }
 
@@ -385,7 +392,7 @@
       cursor: pointer;
     }
 
-    .menu-button:hover { background: #43464a; }
+    .menu-button:hover { background: var(--hover); }
 
     .wrap-buttons { display: flex; flex-wrap: wrap; gap: 4px; }
 
@@ -449,9 +456,9 @@
       width: 26px;
       height: 11px;
       overflow: hidden;
-      border: 1px solid #18191b;
+      border: 1px solid #0b0b0b;
       border-radius: 2px;
-      background: #4a4d52;
+      background: #3c3c3c;
     }
 
     .flag-sample.candidate { border: 1px dashed #c9ccd1; }
@@ -508,9 +515,9 @@
       font-weight: 600;
     }
 
-    .sheet tbody tr:nth-child(odd) td { background: #2b2d30; }
-    .sheet tbody tr:nth-child(even) td { background: #2f3134; }
-    .sheet tbody tr:hover td { background: #383b3f; }
+    .sheet tbody tr:nth-child(odd) td { background: #1e1e1e; }
+    .sheet tbody tr:nth-child(even) td { background: #232323; }
+    .sheet tbody tr:hover td { background: #2e2e2e; }
 
     .sheet .row-index,
     .sheet tbody td.row-index { width: 1%; color: var(--text-faint); text-align: right; background: var(--pane); }
@@ -561,20 +568,21 @@
 <body>
   <div class="desktop">
     <nav class="pane-tabs" role="tablist" aria-label="视图">
-      <span class="app-name">制作知识网络</span>
-      <button class="pane-tab" type="button" role="tab" data-view="graph-view" aria-selected="true">网络</button>
-      <button class="pane-tab" type="button" role="tab" data-view="maturity-view" aria-selected="false">工作流矩阵</button>
-      <button class="pane-tab" type="button" role="tab" data-view="evidence-view" aria-selected="false">Recipe 证据</button>
-      <button class="pane-tab" type="button" role="tab" data-view="intervention-view" aria-selected="false">人工修正</button>
+      <span class="app-name" data-icon="app">制作知识网络</span>
+      <button class="pane-tab" type="button" role="tab" data-view="graph-view" aria-selected="true" data-icon="network">网络</button>
+      <button class="pane-tab" type="button" role="tab" data-view="maturity-view" aria-selected="false" data-icon="matrix">工作流矩阵</button>
+      <button class="pane-tab" type="button" role="tab" data-view="evidence-view" aria-selected="false" data-icon="evidence">Recipe 证据</button>
+      <button class="pane-tab" type="button" role="tab" data-view="intervention-view" aria-selected="false" data-icon="corrections">人工修正</button>
     </nav>
 
     <div class="path-bar">
       <div class="crumbs" id="crumbs" aria-label="当前位置"></div>
       <div class="tools" id="graph-tools">
-        <label class="search">
+        <label class="search" data-icon="search">
           <input id="graph-search" type="search" placeholder="搜索名称、标签或摘要" aria-label="搜索记录">
           <span class="search-count" id="search-count"></span>
         </label>
+        <span class="filter-icon" data-icon="filter" aria-hidden="true"></span>
         <select id="type-filter" class="menu" aria-label="记录类型">
           <option value="">全部类型</option>
           <option value="workflow">Workflow</option>
@@ -599,8 +607,8 @@
           <option value="spine">只看归属连线</option>
           <option value="all">含依赖连线</option>
         </select>
-        <button id="fit-graph" class="tool-button" type="button" title="快捷键 H">显示全部</button>
-        <button id="reset-graph" class="tool-button" type="button">清除筛选</button>
+        <button id="fit-graph" class="tool-button" type="button" title="快捷键 H" data-icon="frame">显示全部</button>
+        <button id="reset-graph" class="tool-button" type="button" data-icon="clear">清除筛选</button>
       </div>
     </div>
 
@@ -735,11 +743,36 @@
       return css((TYPE_META[type] || TYPE_META.capability).color);
     }
 
-    function swatch(type, className = "swatch") {
+    const ICONS = KNOWLEDGE.icons || { available: false, types: {}, workflows: {}, ui: {} };
+
+    function iconSource(type, recordId) {
+      if (type === "workflow" && ICONS.workflows[recordId]) return ICONS.workflows[recordId];
+      return ICONS.types[type] || null;
+    }
+
+    function hicon(source, className = "hicon") {
+      const image = element("img", className);
+      image.src = source;
+      image.alt = "";
+      image.draggable = false;
+      return image;
+    }
+
+    // A Houdini icon when the local install provided one, otherwise a colour chip.
+    function swatch(type, className = "swatch", recordId = null) {
+      const source = iconSource(type, recordId);
+      if (source) return hicon(source, className === "type-chip" ? "hicon large" : "hicon");
       const node = element("span", className);
       node.style.setProperty("--c", typeColor(type));
       return node;
     }
+
+    document.querySelectorAll("[data-icon]").forEach((holder) => {
+      const source = ICONS.ui[holder.dataset.icon];
+      if (!source) return;
+      holder.prepend(hicon(source));
+      if (holder.classList.contains("search")) holder.classList.add("has-icon");
+    });
 
     function hexToRgb(hex) {
       const value = parseInt(hex.replace("#", ""), 16);
@@ -789,12 +822,12 @@
       return parts.length ? svgUri(NODE_W, NODE_H, parts.join("")) : null;
     }
 
-    function boxImage(width, height, title, note) {
+    function boxImage(width, height, title, note, iconSpace) {
       const r = 3;
       return svgUri(width, height, [
-        `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="${r}" fill="#5b5f65" fill-opacity="0.32" stroke="#666a70" stroke-opacity="0.7"/>`,
-        `<path d="M0.5 ${BOX_TITLE} V${r + 0.5} a${r} ${r} 0 0 1 ${r} -${r} H${width - r - 0.5} a${r} ${r} 0 0 1 ${r} ${r} V${BOX_TITLE} Z" fill="#5d6167"/>`,
-        `<text x="10" y="15.5" font-family="${xml(FONT)}" font-size="12" font-weight="600" fill="#e6e8eb">${xml(title)}</text>`,
+        `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="${r}" fill="#3a3a3a" fill-opacity="0.5" stroke="#474747"/>`,
+        `<path d="M0.5 ${BOX_TITLE} V${r + 0.5} a${r} ${r} 0 0 1 ${r} -${r} H${width - r - 0.5} a${r} ${r} 0 0 1 ${r} ${r} V${BOX_TITLE} Z" fill="#333333"/>`,
+        `<text x="${iconSpace ? 28 : 10}" y="15.5" font-family="${xml(FONT)}" font-size="12" font-weight="600" fill="#d2d2d2">${xml(title)}</text>`,
         note ? `<text x="${width - 10}" y="15.5" text-anchor="end" font-family="${xml(FONT)}" font-size="11.5" fill="${css("--warn")}">${xml(note)}</text>` : ""
       ].join(""));
     }
@@ -897,6 +930,10 @@
     }
 
     const layout = computeLayout();
+    const contentTop = Math.min(
+      ...layout.lanes.map((lane) => lane.top),
+      ...Object.values(layout.positions).map((position) => position.y - NODE_H / 2)
+    );
     const boxLeft = (columnX.recipe ?? columnX.template_manifest ?? columnX.workflow) - NODE_W / 2 - BOX_PAD;
     const boxRight = columnX.workflow + NODE_W / 2 + BOX_PAD;
 
@@ -910,7 +947,8 @@
           type: "box",
           w: width,
           h: lane.height,
-          image: boxImage(width, lane.height, lane.id.replaceAll("-", "_"), gaps ? `缺 ${gaps} 项证据` : "")
+          icon: ICONS.workflows[lane.id] || "",
+          image: boxImage(width, lane.height, lane.id.replaceAll("-", "_"), gaps ? `缺 ${gaps} 项证据` : "", Boolean(ICONS.workflows[lane.id]))
         },
         position: { x: (boxLeft + boxRight) / 2, y: lane.top + lane.height / 2 },
         classes: "box",
@@ -921,14 +959,12 @@
 
     const recordElements = KNOWLEDGE.nodes.map((node) => {
       const flags = flagImage(node.data.status);
+      const icon = iconSource(node.data.type, node.data.record_id);
       const data = { ...node.data, display: nodeLabel(node.data.label) };
       if (flags) data.flags = flags;
-      return {
-        group: "nodes",
-        data,
-        position: layout.positions[node.data.id] || { x: 0, y: 0 },
-        classes: CJK.test(node.data.label) ? "cjk" : ""
-      };
+      if (icon) data.icon = icon;
+      const classes = [CJK.test(node.data.label) ? "cjk" : "", icon ? "has-icon" : ""].filter(Boolean).join(" ");
+      return { group: "nodes", data, position: layout.positions[node.data.id] || { x: 0, y: 0 }, classes };
     });
 
     const edgeElements = KNOWLEDGE.edges.map((edge) => ({
@@ -953,28 +989,25 @@
             "font-size": 12,
             "font-weight": 600,
             "line-height": 1.2,
-            "color": "#eceef0",
+            "color": "#e4e4e4",
             "text-valign": "center",
             "text-halign": "center",
             "text-wrap": "wrap",
             "text-max-width": NODE_W - FLAG_W * 2 - 14,
             "border-width": 1,
-            "border-color": "#18191b",
+            "border-color": "#0b0b0b",
             "overlay-opacity": 0
           }
         }
       ];
       Object.keys(TYPE_META).forEach((type) => {
-        style.push({ selector: `node[type = '${type}']`, style: { "background-color": mix(typeColor(type), "#2b2d30", 0.55) } });
+        style.push({ selector: `node[type = '${type}']`, style: { "background-color": mix(typeColor(type), "#262626", 0.5) } });
       });
       style.push(
         { selector: "node[type = 'workflow']", style: { "background-color": typeColor("workflow"), "color": "#ffffff" } },
         { selector: "node.cjk", style: { "text-overflow-wrap": "anywhere" } },
-        {
-          selector: "node[flags]",
-          style: { "background-image": "data(flags)", "background-width": "100%", "background-height": "100%" }
-        },
-        { selector: "node[status = 'candidate']", style: { "border-style": "dashed", "border-color": "#c9ccd1", "border-width": 1.2 } },
+        { selector: "node.has-icon", style: { "text-margin-x": 12, "text-max-width": NODE_W - FLAG_W * 2 - 38 } },
+        { selector: "node[status = 'candidate']", style: { "border-style": "dashed", "border-color": "#a3a3a3", "border-width": 1.2 } },
         { selector: "node[status = 'deprecated']", style: { "opacity": 0.5 } },
         {
           selector: "node.box",
@@ -1000,11 +1033,11 @@
           style: {
             "curve-style": "straight",
             "width": 1.5,
-            "line-color": "#9a9ea4",
+            "line-color": "#7a7a7a",
             "target-arrow-shape": "none",
             "font-family": FONT,
             "font-size": 11,
-            "color": "#e6e8eb",
+            "color": "#e4e4e4",
             "text-background-color": css("--canvas"),
             "text-background-opacity": 1,
             "text-background-padding": 2,
@@ -1012,13 +1045,13 @@
           }
         },
         // Houdini draws dependency links dashed; contextual scope edges are those.
-        { selector: "edge[tier = 'context']", style: { "line-style": "dashed", "line-dash-pattern": [5, 4], "line-color": "#7f848b", "width": 1.2 } },
+        { selector: "edge[tier = 'context']", style: { "line-style": "dashed", "line-dash-pattern": [5, 4], "line-color": "#5c5c5c", "width": 1.2 } },
         { selector: "node.faded", style: { "opacity": 0.22 } },
         { selector: "node.box.faded", style: { "opacity": 0.45 } },
         { selector: "edge.faded", style: { "opacity": 0.08 } },
-        { selector: "edge.lineage", style: { "line-color": "#d9dce0", "width": 2 } },
+        { selector: "edge.lineage", style: { "line-color": "#cfcfcf", "width": 2 } },
         { selector: "edge.direct", style: { "line-color": select, "width": 2.2, "label": "data(label)" } },
-        { selector: "edge.hover", style: { "line-color": "#e6e8eb", "width": 2.2 } }
+        { selector: "edge.hover", style: { "line-color": "#dedede", "width": 2.2 } }
       );
       return style;
     }
@@ -1037,6 +1070,32 @@
 
     const records = () => cy.nodes().not(".box");
 
+    // Houdini puts the node-type icon inside the node, just after the bypass flag.
+    records().forEach((node) => {
+      const layers = [];
+      if (node.data("flags")) layers.push({ image: node.data("flags"), x: "0px", y: "0px", w: "100%", h: "100%" });
+      if (node.data("icon")) layers.push({ image: node.data("icon"), x: `${FLAG_W + 5}px`, y: "50%", w: "20px", h: "20px" });
+      if (!layers.length) return;
+      node.style({
+        "background-image": layers.map((layer) => layer.image),
+        "background-position-x": layers.map((layer) => layer.x),
+        "background-position-y": layers.map((layer) => layer.y),
+        "background-width": layers.map((layer) => layer.w),
+        "background-height": layers.map((layer) => layer.h)
+      });
+    });
+
+    cy.nodes(".box").forEach((box) => {
+      if (!box.data("icon")) return;
+      box.style({
+        "background-image": [box.data("image"), box.data("icon")],
+        "background-position-x": ["0px", "8px"],
+        "background-position-y": ["0px", "3px"],
+        "background-width": ["100%", "16px"],
+        "background-height": ["100%", "16px"]
+      });
+    });
+
     // ---------- canvas chrome that follows pan/zoom ----------
 
     const network = byId("network");
@@ -1053,7 +1112,13 @@
       const grid = 24 * zoom;
       network.style.backgroundSize = `${grid}px ${grid}px`;
       network.style.backgroundPosition = `${pan.x}px ${pan.y}px`;
-      headers.forEach(({ node, x }) => { node.style.left = `${x * zoom + pan.x}px`; });
+      // Headers ride just above the content and step aside once it scrolls under them.
+      const top = (contentTop - 24) * zoom + pan.y;
+      headers.forEach(({ node, x }) => {
+        node.style.left = `${x * zoom + pan.x}px`;
+        node.style.top = `${top}px`;
+        node.hidden = top < 2;
+      });
     }
 
     cy.on("viewport resize", syncCanvas);
@@ -1065,6 +1130,7 @@
       item.append(swatch(type), meta.label);
       legend.appendChild(item);
     });
+    if (ICONS.source) legend.title = `图标来自本机 ${ICONS.source}`;
     ["candidate", "validated", "canonical", "deprecated"].forEach((status) => {
       const item = element("span");
       item.append(element("span", `flag-sample ${status}`), status);
@@ -1203,9 +1269,15 @@
       renderCrumbs(null);
     }
 
-    function fitVisible() {
+    // Unfiltered views frame the network boxes too, leaving room for the column headers.
+    function framedElements() {
       const visible = records().filter(":visible");
-      cy.animate({ fit: { eles: visible.length ? visible : cy.elements(), padding: 40 }, duration: reducedMotion ? 0 : 260 });
+      if (!visible.length) return cy.elements();
+      return visible.length === records().length ? visible.union(cy.nodes(".box")) : visible;
+    }
+
+    function fitVisible() {
+      cy.animate({ fit: { eles: framedElements(), padding: 44 }, duration: reducedMotion ? 0 : 260 });
     }
 
     cy.on("tap", "node", (event) => focusNode(event.target));
@@ -1274,7 +1346,9 @@
     }
 
     function renderCrumbs(node) {
-      crumbs.replaceChildren(crumb("knowledge", () => { clearFocus(); fitVisible(); }));
+      const root = crumb("knowledge", () => { clearFocus(); fitVisible(); });
+      if (ICONS.ui.root) root.prepend(hicon(ICONS.ui.root));
+      crumbs.replaceChildren(root);
       if (!node) return;
       const data = node.data();
       const lane = data.type !== "workflow" && data.workflows.length === 1 ? data.workflows[0] : null;
@@ -1304,20 +1378,27 @@
       const button = element("button", "link-row");
       button.type = "button";
       button.title = data.title;
-      button.append(swatch(data.type), element("span", "name", data.title), element("span", warn ? "rel warn" : "rel", note));
+      button.append(swatch(data.type, "swatch", data.record_id), element("span", "name", data.title), element("span", warn ? "rel warn" : "rel", note));
       button.addEventListener("click", () => focusNode(target, { reveal: true }));
       return button;
     }
 
     function header(type, typeLabel, name) {
       const head = element("div", "parm-header");
-      head.appendChild(type ? swatch(type, "type-chip") : element("span", "type-chip"));
+      head.appendChild(type ? swatch(type, "type-chip") : (ICONS.ui.root ? hicon(ICONS.ui.root, "hicon large") : element("span", "type-chip")));
       head.appendChild(element("span", "parm-type", typeLabel));
       const input = element("input", "parm-name");
       input.readOnly = true;
       input.value = name;
       input.setAttribute("aria-label", "记录名称");
       head.appendChild(input);
+      return head;
+    }
+
+    function headerFor(data) {
+      const head = header(data.type, data.type_label, data.title);
+      const icon = iconSource(data.type, data.record_id);
+      if (icon) head.firstChild.replaceWith(hicon(icon, "hicon large"));
       return head;
     }
 
@@ -1372,7 +1453,7 @@
           data.workflows.forEach((id) => {
             const button = element("button", "menu-button", id);
             button.type = "button";
-            button.prepend(swatch("workflow"));
+            button.prepend(swatch("workflow", "swatch", id));
             button.addEventListener("click", () => focusNode(cy.getElementById(`workflow:${id}`), { reveal: true }));
             wrap.appendChild(button);
           });
@@ -1431,7 +1512,7 @@
 
       const renderers = { evidence: evidenceFolder, relations: relationFolder, record: recordFolder };
       pane.replaceChildren(
-        header(data.type, data.type_label, data.title),
+        headerFor(data),
         ...folders([
           { key: "evidence", label: "证据", count: data.missing_evidence.length },
           { key: "relations", label: "关系", count: incoming.length + outgoing.length },
@@ -1483,7 +1564,7 @@
     function rowLink(type, text, nodeId) {
       const button = element("button", "row-link", text);
       button.type = "button";
-      button.prepend(swatch(type));
+      button.prepend(swatch(type, "swatch", text));
       button.addEventListener("click", () => openInNetwork(nodeId));
       return button;
     }
@@ -1573,7 +1654,7 @@
     renderCrumbs(null);
     renderOverview();
     applyFilters();
-    cy.fit(records(), 40);
+    cy.fit(framedElements(), 44);
     syncCanvas();
   </script>
 </body>

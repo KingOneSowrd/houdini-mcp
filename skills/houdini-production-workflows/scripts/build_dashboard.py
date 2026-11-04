@@ -4,12 +4,18 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import os
+import platform
+import re
 import sys
 import webbrowser
+import zipfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 
 SCRIPT_ROOT = Path(__file__).resolve().parent
@@ -30,6 +36,33 @@ from experience_cli import (  # noqa: E402
     validate_paths,
 )
 
+
+# Houdini icon names (``icons.zip`` entries without ``.svg``). SideFX icons are
+# never committed: they are read from the local Houdini install at build time
+# and embedded only in the generated, git-ignored dashboard.
+ICON_ARCHIVE = Path("houdini") / "config" / "Icons" / "icons.zip"
+TYPE_ICONS = {
+    "recipe": "BUTTONS/recipe",
+    "case": "DESKTOP/hip",
+    "experience": "NETWORKS/top",
+    "template_manifest": "DESKTOP/otl",
+    "capability": "MISC/connection",
+    "workflow": "COMMON/null",
+}
+UI_ICONS = {
+    "app": "DESKTOP/application",
+    "network": "PANETYPES/network",
+    "matrix": "PANETYPES/parameter_spreadsheet",
+    "evidence": "PANETYPES/details",
+    "corrections": "BUTTONS/list_warning_up",
+    "root": "NETWORKS/root",
+    "search": "BUTTONS/search",
+    "filter": "BUTTONS/filter",
+    "frame": "IMAGE/fit_to_window",
+    "clear": "BUTTONS/clear",
+    "display_flag": "NODEFLAGS/display",
+    "bypass_flag": "NODEFLAGS/bypass",
+}
 
 TYPE_LABELS = {
     "workflow": "Workflow",
@@ -108,11 +141,128 @@ def _record_environment(record: dict[str, Any]) -> list[str]:
     return values
 
 
+def _version_key(path: Path) -> tuple[int, ...]:
+    return tuple(int(part) for part in re.findall(r"\d+", path.as_posix())[-3:]) or (0,)
+
+
+def _install_roots() -> list[Path]:
+    """Houdini install roots from the platform's usual places, newest first."""
+    roots: list[Path] = []
+    system = platform.system().lower()
+    if system == "windows":
+        try:
+            import winreg
+        except ImportError:
+            winreg = None
+        for hive in (getattr(winreg, "HKEY_LOCAL_MACHINE", None), getattr(winreg, "HKEY_CURRENT_USER", None)):
+            if winreg is None or hive is None:
+                continue
+            for key_path in (r"SOFTWARE\Side Effects Software", r"SOFTWARE\WOW6432Node\Side Effects Software"):
+                try:
+                    with winreg.OpenKey(hive, key_path) as root:
+                        for index in range(winreg.QueryInfoKey(root)[0]):
+                            name = winreg.EnumKey(root, index)
+                            if not name.lower().startswith("houdini"):
+                                continue
+                            try:
+                                with winreg.OpenKey(root, name) as child:
+                                    roots.append(Path(winreg.QueryValueEx(child, "InstallPath")[0]))
+                            except OSError:
+                                continue
+                except OSError:
+                    continue
+    elif system == "darwin":
+        for parent in (Path("/Applications/Houdini"), Path("/Applications")):
+            roots.extend(parent.glob("Houdini*/Houdini*.app/Contents/Frameworks/Houdini.framework/Versions/Current/Resources"))
+            roots.extend(parent.glob("Houdini*.app/Contents/Frameworks/Houdini.framework/Versions/Current/Resources"))
+    else:
+        for parent in (Path("/opt"), Path("/usr/local")):
+            roots.extend(parent.glob("hfs*"))
+    return sorted(set(roots), key=_version_key, reverse=True)
+
+
+def discover_icon_archive(environment: dict[str, str] | None = None) -> Path | None:
+    """Find Houdini's ``icons.zip``: explicit override, HFS/HH, then installs."""
+    env = os.environ if environment is None else environment
+    override = env.get("HOUDINI_MCP_ICON_ARCHIVE")
+    if override:
+        path = Path(os.path.expandvars(os.path.expanduser(override)))
+        return path if path.is_file() else None
+    candidates: list[Path] = []
+    if env.get("HFS"):
+        candidates.append(Path(env["HFS"]) / ICON_ARCHIVE)
+    if env.get("HH"):
+        candidates.append(Path(env["HH"]) / ICON_ARCHIVE.relative_to("houdini"))
+    if environment is None:
+        candidates.extend(root / ICON_ARCHIVE for root in _install_roots())
+    return next((path for path in candidates if path.is_file()), None)
+
+
+SVG_NS = "http://www.w3.org/2000/svg"
+_EDITOR_NAMESPACES = (
+    "{http://www.inkscape.org/namespaces/inkscape}",
+    "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}",
+)
+ElementTree.register_namespace("", SVG_NS)
+ElementTree.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+
+
+def _strip_editor_data(element: ElementTree.Element) -> None:
+    for child in list(element):
+        tag = child.tag if isinstance(child.tag, str) else ""
+        if tag.startswith(_EDITOR_NAMESPACES) or tag == f"{{{SVG_NS}}}metadata":
+            element.remove(child)
+        else:
+            _strip_editor_data(child)
+    for name in [name for name in element.attrib if name.startswith(_EDITOR_NAMESPACES)]:
+        del element.attrib[name]
+
+
+def _svg_data_uri(svg: str) -> str:
+    """Drop Inkscape/Sodipodi editor data; keep the drawing untouched."""
+    try:
+        root = ElementTree.fromstring(svg.encode("utf-8"))
+        _strip_editor_data(root)
+        svg = ElementTree.tostring(root, encoding="unicode")
+    except ElementTree.ParseError:
+        pass
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
+def load_icons(workflows: list[dict[str, Any]], archive: Path | None) -> dict[str, Any]:
+    """Embed the Houdini icons the dashboard uses; degrade to none."""
+    empty = {"available": False, "source": "", "types": {}, "workflows": {}, "ui": {}}
+    if archive is None:
+        return empty
+    wanted = {
+        "types": dict(TYPE_ICONS),
+        "workflows": {item["id"]: item["icon"] for item in workflows if item.get("icon")},
+        "ui": dict(UI_ICONS),
+    }
+    version = re.search(r"\d+\.\d+\.\d+", archive.as_posix())
+    source = f"Houdini {version.group(0)}" if version else "Houdini"
+    result: dict[str, Any] = {"available": True, "source": source, "types": {}, "workflows": {}, "ui": {}}
+    try:
+        with zipfile.ZipFile(archive) as bundle:
+            names = set(bundle.namelist())
+            for group, entries in wanted.items():
+                for key, icon in entries.items():
+                    entry = f"{icon}.svg"
+                    if entry in names:
+                        result[group][key] = _svg_data_uri(bundle.read(entry).decode("utf-8", "replace"))
+    except (OSError, zipfile.BadZipFile):
+        return empty
+    return result
+
+
 def _node_id(record_type: str, identifier: str) -> str:
     return f"{record_type}:{identifier}"
 
 
-def build_model() -> dict[str, Any]:
+_DISCOVER = object()
+
+
+def build_model(icon_archive: Any = _DISCOVER) -> dict[str, Any]:
     """Return the dashboard projection; source records remain authoritative."""
     record_paths = discover_record_paths()
     failures, reports = validate_paths(record_paths)
@@ -402,6 +552,7 @@ def build_model() -> dict[str, Any]:
         },
         "warnings": sorted(set(warnings)),
         "status_order": list(STATUS_ORDER),
+        "icons": load_icons(workflows, discover_icon_archive() if icon_archive is _DISCOVER else icon_archive),
     }
 
 
@@ -409,8 +560,8 @@ def _safe_script_text(value: str) -> str:
     return value.replace("</script", "<\\/script")
 
 
-def render_dashboard(output: Path) -> Path:
-    model = build_model()
+def render_dashboard(output: Path, icon_archive: Any = _DISCOVER) -> Path:
+    model = build_model(icon_archive)
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     cytoscape_bundle = CYTOSCAPE_PATH.read_text(encoding="utf-8")
     if template.count("/*__CYTOSCAPE_BUNDLE__*/") != 1:
