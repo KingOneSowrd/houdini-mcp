@@ -96,12 +96,14 @@ The dashboard projects the validated records into an interactive relationship
 graph, workflow matrix, Recipe evidence view, and correction hot spots. It is a
 read-only generated view; JSON and Markdown records remain the only knowledge
 source. Cytoscape.js 3.34.2 is vendored under its MIT license so the dashboard
-does not require a network connection. The graph uses one swim lane per
-workflow with evidence, recipes, and workflows arranged left to right; selecting
-a node keeps only its upstream and downstream evidence chain, and the detail
-panel navigates along its relationships. Contextual edges stay hidden until a
-node is selected or the relationship filter requests them. The page follows
-the system light or dark theme.
+does not require a network connection. The page borrows Houdini's own
+interface: each workflow is a network box holding its recipes and workflow
+output, evidence feeds in from the left, node flags mark validated, canonical,
+and deprecated records, and contextual scope links are drawn dashed like
+dependency links. Selecting a node keeps only its upstream and downstream
+evidence chain and opens its records in a Parameter Editor-style pane; the
+matrix views read like the Geometry Spreadsheet. `H` frames all nodes and `F`
+frames the selection.
 
 ## Hybrid tool catalog
 

@@ -136,7 +136,8 @@ class ExperienceSystemTests(unittest.TestCase):
             self.assertIn("project-titan-curve-modules", content)
             self.assertIn("cytoscape", content)
             self.assertIn('id="relation-filter"', content)
-            self.assertIn('<option value="spine">只看主干</option>', content)
+            for relation_mode in ("spine", "evidence", "all"):
+                self.assertIn(f'<option value="{relation_mode}">', content)
 
     def test_dashboard_cli_builds_requested_output(self):
         with tempfile.TemporaryDirectory() as temporary:
