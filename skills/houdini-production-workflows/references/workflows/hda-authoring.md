@@ -13,6 +13,10 @@ bake/export actions formed a reusable HDA. It supports the candidate
 
 ## Decision guidance
 
+- Assess native nodes and reasonable node combinations in the target version.
+  The user identified a native algorithm gap as the core reason for Python in
+  Hair Tangent Baker. Distinguish that from a missing MCP wrapper for an
+  existing native operation; unfamiliarity alone is not evidence of absence.
 - Judge Python by ownership, reproducibility, artist control, and side effects.
   Embedded Python SOP algorithms and explicit asset commands are legitimate
   implementation choices. This does not authorize arbitrary Agent Python calls

@@ -19,6 +19,13 @@ they must not be counted as independent cases. No binary template was imported.
 
 ## Why this delivery succeeded
 
+The user clarified on 2026-11-04 that accepting Python was primarily motivated
+by the lack of a suitable native Houdini node for the required algorithm.
+This is the project's stated selection rationale, not an exhaustive audit of
+all Houdini versions or third-party nodes. Distinguish a native algorithm gap
+from an MCP wrapper gap; assess success by usability, parameter control and
+reproducibility rather than Python volume.
+
 1. `tools/python_module.py` loads embedded `Python/*.py` sections and keys the
    module namespace/cache by their content signature. Runtime logic belongs
    to the asset rather than the original development source directory.

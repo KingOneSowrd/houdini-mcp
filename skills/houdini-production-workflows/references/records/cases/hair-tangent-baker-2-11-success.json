@@ -9,7 +9,7 @@
     "kind": "production",
     "locator": "Hair_Tangent_Baker_HDA/",
     "fingerprint": "sha256:60ad0bb1b70a5bc0f3fc8443911407f2c389f2fd99a57aedaa5832bfc48485ed",
-    "notes": "Locator is relative to the user-supplied project collection. Fingerprint hashes the sorted source-file SHA256 mapping in references/cases/hair-tangent-baker.md. Reviewed snapshots do not establish that historical reports tested the current binary."
+    "notes": "Locator is relative to the user-supplied project collection. Fingerprint hashes the sorted source-file SHA256 mapping in references/cases/hair-tangent-baker.md. Reviewed snapshots do not establish that historical reports tested the current binary. User clarification on 2026-11-04: a native algorithm gap motivated Python; usability, controls and reproducibility are the acceptance priorities."
   },
   "environment": {
     "houdini_versions": [

@@ -1,6 +1,6 @@
 # Houdini MCP 工作流钳制与经验闭环：评估、设计与实施计划
 
-> 状态：设计提案（2026-11-04）。基于 `3fa5467` 的代码与 `skills/houdini-production-workflows/` 现状。
+> 状态：设计提案（2026-11-04）。初始盘点基于 `3fa5467`；第 1–2 节保留当时问题背景，阶段 0 的修复见实施进度。2026-11-04 根据 Hair Tangent Baker 成功经验更新 Python 判据，并补充节点输出属性观测计划。下文拟议能力不代表已经实现。
 > 本文不改变 AGENTS.md 中的兼容不变量；凡涉及默认行为变化的条目都单独标注【行为变更】，需要明确同意后再落地。
 
 ---
@@ -22,7 +22,7 @@
    它现在是"知识库 + 晋升纪律"，还不是"提升系统"。
 4. **建议**：在现有架构上增加一个 **Workflow Governor（钳制层）** 和一个 **Experience Loop（闭环层）**，两者共享一份 **执行日志（Journal）**。核心理念一句话：
 
-   > **逻辑必须驻留在网络里。** Agent 的产出应当是一张美术能读、能改、能重 Cook 的程序化网络，而不是一次性执行的脚本副作用。Python 不是被禁止，而是被要求"要么进图，要么只读，要么说明理由并被记录"。
+   > **交付首先要好用、可调、能复现。** 原生节点无法合理覆盖所需算法时，允许将 Python 封装进 HDA、Python SOP 或显式资产命令。计算逻辑、输入、参数、版本与结果必须可追溯；普通 Cook 与烘焙/导出分别管理。约束针对不可复现的临时状态和越界副作用，不以 Python 用量替代产品质量。
 
 ---
 
@@ -144,9 +144,9 @@
 
 ### 3.1 可修改性的七条可检测标准
 
-一个 Agent 交付的网络是"合格程序化资产"，当且仅当：
+以下为交付检查维度；结合产品契约验收，不以单一节点形态或语言判定合格：
 
-1. **逻辑在图里**：所有几何结果都可由当前网络重新 Cook 得到；没有 Hard-lock、Stash 冻结、图外 Python 写入的静态几何。
+1. **逻辑有归属**：程序化几何可由网络与持久化算法重新 Cook；纹理烘焙/导出可由资产显式命令及已记录输入、参数、版本重新生成。HDA 内嵌 PythonModule 是有效归属；有来源与重建路径的缓存、Stash 或外部产物不因其形态被判错。
 2. **控制集中**：用户可能想调的量（数量、尺度、种子、密度、阈值）集中在一个控制节点（Controller Null / HDA 接口）上，下游通过 `ch()` 相对引用，而不是散落在各节点的死值。
 3. **VEX 参数化**：Wrangle 中的魔法数字通过 `ch("name")` 暴露为 Spare Parm。
 4. **输出契约明确**：每个阶段有命名的 `OUT_*` Null；Display/Render Flag 在终端节点；输出几何满足 `geometry-contracts.md` 中的属性契约。
@@ -154,7 +154,7 @@
 6. **可复现**：所有随机节点暴露 seed；没有对偶然点序的依赖；路径用 `$HIP`/`$JOB`，不硬编码盘符。
 7. **成本可控**：昂贵分支（Sim、Remesh、大量 Copy）前有 Cache 边界或默认 Bypass；无意外的时间依赖。
 
-这七条全部可以由一个只读的 `lint_network` 能力机检（见 4.4），从而成为闭环的**度量信号**。
+这七条中的结构条件可由 `lint_network` 辅助机检；好用程度需用户反馈，可调行为与可复现性需实际参数测试、重开及输出契约验证。不能把静态 lint 通过等同于完整验收。
 
 ### 3.2 Python 的合理位置
 
@@ -163,14 +163,26 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
 | 用法 | 产出 | 是否符合工作流 | 处理策略 |
 |---|---|---|---|
 | 只读查询（遍历节点、读参数、统计） | 信息 | ✅ 但通常有 Typed 等价物 | 允许；提示等价工具；累计到"可供性缺口" |
-| 用 `hou` 搭节点图（createNode/setInput/parm.set） | 一张网络 | ⚠️ 结果可接受，过程不可追溯、不可验证 | 引导到 Graph Patch；放行时做前后 diff，记录"等价 Patch" |
-| 图外计算几何（`hou.Geometry` 写入、Hard-lock、Stash） | 静态几何 | ❌ 违反"逻辑在图里" | 拒绝；建议 Wrangle/SOP 链，或把代码放进 Python SOP |
-| Python SOP / HDA PythonModule / 参数回调 / PDG Python Processor | 图内节点 | ✅ 美术可见可改 | 通过 Typed 能力创建（代码作为参数存在于网络中） |
+| 用 `hou` 搭节点图（createNode/setInput/parm.set） | 一张网络 | 有记录、差异与回滚时可接受 | 有合适 Typed 能力时优先使用；缺口下允许有范围的 Python 构建并记录 diff |
+| 几何算法与缓存（`hou.Geometry` 等） | 几何或中间数据 | 取决于算法归属、重建路径及副作用 | 原生算法缺口下允许持久化的 Python 实现；仅在结果依赖丢失的临时状态、没有重建路径时阻止交付 |
+| Python SOP / HDA PythonModule / 参数回调 / PDG Python Processor | 参数化资产 | 可调、可复现且成本明确时符合 | 原生无合适等价算法时为合理实现；保留源码/依赖版本、参数接口和验收 |
 | 读外部数据（CSV/JSON/表） | 图内数据 | ✅ 应在图内 | 优先 Table Import / Attribute from File / Python SOP |
-| 文件/进程/网络副作用（os、subprocess、hipFile.save/load、hda.installFile） | 磁盘/外部状态 | ❌ 越过 effect_scope | 拒绝；走对应 Typed 能力（save_hip、HDA 能力、未来 Cache/ROP 能力） |
+| 文件/进程/网络副作用（写文件、进程、HIP/HDA 操作） | 磁盘/外部状态 | 取决于已授权的 effect_scope | 已授权的显式烘焙/导出可执行，记录目标与失败处理；越界或覆盖未知目标才要求补足授权。优先合适 Typed 能力 |
 | 批量管线操作（批量重命名、路径重定向） | 场景元数据 | ⚠️ 合理的一次性需求 | 允许但需理由；若重复出现 → 晋升为 Catalog 能力 |
 
-**一句话：把 Python 从"图外执行"移到"图内节点"或"只读查询"，剩下的必须解释并被记录。**
+**选择顺序**：检查目标版本实际可用的原生节点/合理节点组合与 Typed 能力 → 识别算法缺口或工具封装缺口 → 选择可维护实现 → 用产品验收证明结果。不要求为降低 Python 比例把合理算法拆成难以维护的节点网络；也不把“Agent 不熟悉某节点”认定为原生缺失。
+
+### 3.3 成功经验反馈：Hair Tangent Baker 2.11
+
+用户于 2026-11-04 明确认可这次 HDA 交付成功，并补充：**此次接受 Python 的核心是所需算法没有合适的 Houdini 原生对应节点；评价重点是 HDA 好用、可调、能复现。** 这是该项目的选型依据，不代表已穷举所有 Houdini 版本或第三方节点。
+
+案例：[Hair Tangent Baker](../skills/houdini-production-workflows/references/cases/hair-tangent-baker.md)；经验：`exp-hair-tangent-baker-2-11-success`；候选方法：`hda-authoring-v1`。
+
+- 已审阅设计包含嵌入式模块、原生参数/Ramp、SOP 计算、显式烘焙、临时批次成功后发布、原输入与结果分离。
+- 已有 2.11.0 报告支持默认行为、参数响应、UV/Mikk 与重开等范围内验收；本轮没有重跑资产。2.4.0 standalone 报告与历史便携报告不能直接证明最新开发包。
+- 将“原生算法缺口”与“MCP 未封装已有原生能力”分开：前者支持合理 Python 算法，后者优先改善工具可供性。
+- 成功经验不自动升级为跨项目通用规范。当前 Case/Experience/Recipe 属于同一证据来源，保留候选成熟度及接缝、毛流、Unreal 验收等边界。
+- 后续查询相关案例时，应返回这个选型理由及产品验收条件，不能只返回“减少 Python”。
 
 ---
 
@@ -208,7 +220,7 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
    - 移入：`get_network_snapshot`、`apply_graph_patch`、`search_node_types`、`check_network`（= cook + 错误/警告 + 可选 lint 的组合只读调用）。
    - 直连 `create_node` 补上 `parameters` / `position`（Catalog 版已有，直连版缺失）。
 2. **Graph Patch 单次调用模式**：保留 `dry_run=true` 默认以兼容，新增 `mode="validate_then_apply"`——内部先做静态校验，通过则直接应用并返回 revision；失败则返回校验错误且不修改。Agent 一次调用完成"计划+执行"。
-3. **服务端 instructions**：在 `FastMCP(...)` 设置 `instructions`，十行以内写清：先快照、用 Graph Patch 建图、控制集中、VEX 用 `ch()`、Python 仅作最后手段并需理由。这对所有 MCP 客户端生效，不依赖 Skill 加载。
+3. **服务端 instructions**：在 `FastMCP(...)` 设置 `instructions`，十行以内写清：先快照、用 Graph Patch 建图、控制集中、VEX 用 `ch()`、合理 Python 算法须记录原生替代评估、资产归属与验收；临时任意代码须说明范围。这对所有 MCP 客户端生效，不依赖 Skill 加载。
 4. **错误响应即教学**：Typed 能力报错时，在 `error` 信封里附带 `suggestions`（已有节点类型建议的机制可扩展）和匹配的 `lessons`（见 4.7），减少"报错一次就转 Python"。
 
 ### 4.3 层 B：Python 策略网关
@@ -222,7 +234,7 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
   "code": "...",
   "intent": "批量把 /obj/geo1 下所有 file SOP 的路径改为 $HIP 相对路径",
   "justification": {
-    "category": "batch_metadata",        // read_only | graph_build | batch_metadata | in_graph_python | other
+    "category": "batch_metadata",        // read_only | graph_build | batch_metadata | in_graph_python | native_algorithm_gap | asset_task | other
     "typed_alternatives_considered": ["set_parameters", "apply_graph_patch"],
     "why_insufficient": "需要对 120 个节点按正则改写，Patch 单次上限 100 且需先遍历"
   },
@@ -240,7 +252,7 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
 | `SIDE_EFFECT` | `import os/subprocess/shutil/socket/requests`、`open(..., "w")`、`hou.hipFile.save/load/clear/merge`、`hou.hda.installFile`、`hou.RopNode.render` |
 | `DYNAMIC` | `exec/eval/compile/__import__/importlib`、字符串拼接后 `getattr` —— 无法静态判定 |
 
-多类别取最高风险。分类器只是"策略输入"，不是安全沙箱——安全边界依然是 effect_scope + 人。
+AST 类别仅是操作线索。必须结合执行宿主（临时命令 / SOP / 内嵌模块 / 显式资产任务）、原生算法缺口、持久化来源、已授权 effect_scope 和重建路径决策。`hou.Geometry` 不等于违规；`exec/compile` 可能是已审阅内嵌模块加载器，需校验加载内容与版本，不能只按词命中封杀。模型自报 justification 不能代替验证；分类器也不是安全沙箱。读取 `geometry()` 可能触发 Cook，READ 不代表零成本。
 
 **策略矩阵**（由 **人** 配置：环境变量 `HOUDINI_MCP_PYTHON_POLICY` 或项目 profile，**不是** Agent 参数）：
 
@@ -248,16 +260,16 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
 |---|---|---|---|
 | READ | 允许 + 提示等价工具 | 允许 + 提示等价工具 | 允许 |
 | GRAPH_BUILD | 拒绝，返回"改用 Graph Patch"及 op 映射表 | 需 justification；放行并做前后 diff，返回 `equivalent_patch` | 允许 + diff |
-| GEO_COMPUTE | 拒绝 | 拒绝；返回 Wrangle/SOP 替代建议，或"用 `create_python_sop` 把代码放进图里" | 需 justification |
-| SIDE_EFFECT | 拒绝 | 拒绝，指向对应 Typed 能力 | 需 justification + 确认 |
-| DYNAMIC | 拒绝 | 拒绝 | 需 justification |
+| GEO_COMPUTE | 仅允许已审阅的持久化资产实现及范围内调用 | 有原生算法缺口、持久化实现、可调接口和验收计划时允许；无重建路径的临时结果要求补齐 | 记录实现归属、理由与验收 |
+| SIDE_EFFECT | 限已授权且有明确目标的资产/Typed 操作 | 已授权显式烘焙/导出等按范围执行；目标、覆盖或权限不明确时才补确认 | 同样遵守 effect_scope 和既有授权 |
+| DYNAMIC | 仅允许已审阅、版本绑定的加载路径 | 可追溯内嵌模块加载器经来源校验允许；未知动态代码要求展开审查 | 记录来源与内容；未知范围不能自动获权 |
 
 附加机制：
 
-- **会话预算**：`guided` 下每个任务允许的 GRAPH_BUILD Python 次数有上限（如 3）；超出后需人工确认。预算耗尽本身是强信号（可供性缺口）。
-- **人工确认（可选）**：MCP SDK 新版本提供 elicitation（`ctx.elicit`），在支持的客户端上可以把"放行 SIDE_EFFECT"变成真正由人点击确认，而不是模型自填 `allow_unsafe`。客户端不支持时回退为拒绝。
+- **诊断预算**：重复的临时 GRAPH_BUILD 回退用于提示工具缺口，默认不以固定 Python 次数中断任务。已审阅资产内部的正常 Python 计算不计作 Agent 回退；成本预算以 Cook 时间、内存、文件写出及任务范围衡量。
+- **必要确认**：仅在现有授权不足以覆盖实际副作用时请求；已授权的相同动作不因使用 Python 再次确认。若采用客户端交互机制，应先核对版本与支持情况；不支持时返回明确待授权信息，而非让模型自填 `allow_unsafe`。
 - **Runtime 侧**：`execute_code` 加入 `MUTATING_COMMANDS`（进 Undo Group）；执行前后对受影响根网络取 revision 与轻量快照，返回 `scene_diff`（新建/删除节点、改动参数、改动连线）。对 GRAPH_BUILD，把 diff 规范化为 `equivalent_patch`（Graph Patch op 列表）写入 Journal——**这是把 Python 行为翻译成 Typed 语言的关键，后续用于挖掘缺口和生成 Recipe 模板**。
-- **图内 Python 的正路**：新增 `create_python_sop`（或扩展 `create_wrangle` 支持 `python` 语言），代码作为节点参数存在于网络中，美术可见可改。
+- **持久化实现路径**：拟新增 `create_python_sop` 及 HDA 模块更新能力，源码保存在节点或定义中；显式资产任务需输入/参数清单、版本和结果报告。Python SOP 与 VEX Wrangle 是不同宿主，不以语言开关混同。
 
 ### 4.4 层 C：程序化质量机检
 
@@ -267,7 +279,7 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
 
 | 规则 | 检测 | 级别 |
 |---|---|---|
-| `L01 geometry_outside_graph` | Hard-locked SOP、Stash 冻结、Python SOP 以外的静态几何来源 | error |
+| `L01 untraceable_output` | 结果依赖无来源、无持久化算法或无重建路径的临时状态；缓存/静态输入/显式烘焙先检查契约，无法静态确定则报告 unknown | confirmed error / unknown |
 | `L02 wrangle_magic_numbers` | VEX 中非 0/1/常见常量的数字字面量，且该 Wrangle 无对应 `ch()` | warn |
 | `L03 scattered_controls` | 同一字面值在 ≥3 个节点的同类参数中重复，且无通道引用 | warn |
 | `L04 missing_output_null` | 网络无 `OUT*` Null，或 Display Flag 不在终端 | warn |
@@ -284,6 +296,35 @@ Python 在 Houdini 里本来就是一等公民，问题从来不是"用没用 Py
 **`validate_contracts(node, contract)`** —— 对 `geometry-contracts.md` 的机检：属性 owner / 类型 / tuple size / 值域（finite、范围）/ 唯一性（如 RBD `name`）/ 多帧稳定性（VAT 点数一致）。Recipe v2 的 acceptance 直接调用它。
 
 这两个能力让"完成"从"节点建好了"变成"lint 通过 + 契约通过"，也为闭环提供**客观度量**。
+
+### 4.4.1 节点输出属性观测与前后差异（新增优先项，尚未实现完整差异工具）
+
+这是 Agent 制作时对应 Geometry Spreadsheet 的观测环节：**先看输入属性 → 修改 → 看输出变化 → 核对预期契约**。网络结构 diff 说明“改了哪些节点”，几何属性 diff 才说明“结果实际变了什么”；两者都需要。
+
+**当前实现核对（2026-11-04）：**
+
+| 能力 | 当前范围 | 边界 |
+|---|---|---|
+| `get_geometry_info(path)` | 指定 SOP 输出的点/面/顶点数、包围盒、Point/Primitive/Vertex/Detail 属性名、数据类型、tuple size、点/面组名 | 几何容器会解析到 Display SOP；不是每种 Houdini 上下文、每个输出端口的通用观测器 |
+| `get_geometry_data(path, element, attributes, start, limit)` | 点或面属性实际值，默认 100 条、最多 500 条/页；仓库 Hybrid 经 Catalog，Legacy 直连 | 不支持 Vertex 和 Detail 值；不提供帧、输出端口或持久快照参数 |
+| `get_network_snapshot` | 节点、连接、可选参数、revision | 不包含逐元素几何属性差异 |
+
+实现依据：`houdinimcp_runtime/server.py` 的 `get_geometry_info/get_geometry_data`、`houdini_mcp_bridge/catalog.py` 的 `GeometryDataArgs`。当前读取调用 `sop.geometry()`，可能触发 Cook；不是保证无计算的缓存读取，昂贵/写出节点不能自动全图扫描。
+
+**第一步：补齐四种 owner 的取值。** 扩展 `get_geometry_data` 支持 `vertices`、`detail`；顶点返回 vertex id、primitive number、local vertex index、point number。不能拿 Point UV 代替 Vertex UV，接缝两侧同一个点可以有不同顶点值。Detail 返回全局值；数组、字典、长字符串等需字节/元素上限和截断标记，保持 points/primitives 兼容。
+
+**第二步：有界几何快照与差异。** 拟新增 Catalog 能力 `capture_geometry_snapshot`、`compare_geometry_snapshots`（名称为提案）：
+
+- 两种比较：同一时间的上游/下游输出；同一节点修改前/后的不可变快照。修改前必须保存值或受控摘要，修改后重新读两次无法找回旧状态。
+- 快照记录节点、实际帧/时间、输入连接、输出选择、拓扑摘要、属性 owner/name/storage/type/size、选择范围、采样策略、截断/覆盖率、Cook 策略与错误。多输出端口先验证运行时可支持范围，不能默认总是第 0 输出或把 HDA 的某个内部分支当作全部输出。
+- 比较新增/删除属性、owner/类型/维度变化、元素数、包围盒、组成员以及值变化。数值提供改动数/比例、最大和均方差、非有限值；方向向量可比较夹角；字符串/类别给出变化摘要。匹配与容差需声明，不默认排序或按点号比较。
+- 拓扑与顺序保证稳定时可按元素索引；有可靠唯一 `id/name` 时按键匹配并报告重复、缺失和未匹配项。顶点键需稳定 primitive 标识与局部对应；拓扑改变无法建立对应时报告“不可逐元素比较”，改用集合/统计/契约，不能把同点数当成同一批点。
+- 大几何优先在 Houdini 侧聚合，返回紧凑差异和少量异常样本；抽样相等不得称为全量未改变。分页读取需固定快照，避免不同页来自不同 Cook/帧。
+- 默认覆盖关键阶段边界、故障附近与用户指定节点；不把所有节点全量属性送给 Agent，也不默认自动 Cook 仿真/烘焙/导出链。
+
+**验收与案例：** Hair Tangent Baker 的中性 Ramp 前后应验证 P/N/UV 与拓扑；UV 前处理前后应核对 Vertex UV 的变化以及 P/拓扑是否保持；“原网格”模式要求点面数、UV/权重保持而 P/N 可按预期改变；“重建”模式允许拓扑改变，采用输出契约验收。补充 owner 改变、同点数重排、拓扑改变、重复 id、空几何、数值容差、非有限值、数组/字符串、分页一致性和无 Cook 数据不可用等测试。
+
+**接入闭环：** 阶段 1 优先补齐取值并设计有界快照，阶段 4 接入差异与契约验收；Journal/Experience 只保存快照引用、摘要和失败样本。知识层据此区分“预期造型修改”和“误伤 UV/属性”，Dashboard 后续展示关键变化，不复制完整几何数据。
 
 ### 4.5 层 D：执行日志（Journal）与人工修改捕获
 
@@ -407,7 +448,7 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
     {"kind": "contract", "node": "OUT_INSTANCES", "contract": "instance-points"},
     {"kind": "lint", "path": "${parent}", "max_severity": "warn"}
   ],
-  "forbidden": ["python:GEO_COMPUTE", "lint:L01"]
+  "forbidden": ["untraceable_output", "unauthorized_side_effect"]
 }
 ```
 
@@ -422,12 +463,13 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 
 | 指标 | 定义 | 目标（建议） |
 |---|---|---|
-| Python 回退率 | 变更类调用中 Python 占比 | guided 下 < 10% |
-| 图外几何率 | `GEO_COMPUTE` Python 次数 | 0 |
+| 临时 Python 回退率 | 有合理 Typed 等价物仍使用临时代码的调用占比；内嵌算法和原生能力缺口单列 | 诊断工具缺口，不设统一语言比例门槛 |
+| 不可复现输出率 | 缺输入/参数/版本/持久化实现或无法重建的交付比例 | 0；不把合法内嵌算法、缓存和显式产物计为失败 |
+| 原生能力缺口交付质量 | Python 补足缺失算法后的参数行为、重开复现、任务验收与用户认可 | 好用、可调、可复现；按版本留证 |
 | 可编辑性评分 | `lint_network` 加权分（终态） | 持续上升 |
 | 首次验收率 | `end_task` 时 checks 全通过的比例 | 持续上升 |
-| 人工修改率 | 每任务人工修改 Agent 节点的次数 | 持续下降 |
-| 平均调用数/任务 | 衡量可供性 | 下降且不以 Python 换取 |
+| 重复纠错率 | 经归因确认的同类缺陷修正次数；艺术探索、偏好调整单列 | 持续下降，不以压低正常调参次数为目标 |
+| 到达有效交付的成本 | 调用数、耗时和计算/人工成本 | 在质量与复现成立时下降，不惩罚合理 Python |
 | Lesson 效果 | 注入前后同签名信号频次 | 下降，否则进入 deprecate 候选 |
 
 ---
@@ -440,9 +482,9 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 | `houdini_mcp_bridge/python_policy.py`（新） | AST 分类器、策略矩阵、预算、justification 校验；纯函数，无 `hou` 依赖 |
 | `houdini_mcp_bridge/journal.py`（新） | JSONL 写入、任务边界、摘要器（参数摘要、节点类型统计）；路径来自环境变量，可关闭 |
 | `houdini_mcp_bridge/knowledge.py`（新） | 读取 skill records（recipes/lessons/routing），按触发器检索，渐进披露 |
-| `houdini_mcp_bridge/catalog.py` | `CodeArgs` 增加 `intent/justification`；新 ToolSpec：`lint_network`, `validate_contracts`, `check_network`, `create_python_sop`, `get_human_edits_since`；`GraphOperation` 扩展 op；`RenderArgs` 去掉 `C:/temp/` 默认值 |
+| `houdini_mcp_bridge/catalog.py` | `CodeArgs` 增加 `intent/justification`；`GeometryDataArgs` 增加 Vertex/Detail；拟新增有界几何快照/差异 ToolSpec（4.4.1）；新 ToolSpec：`lint_network`, `validate_contracts`, `check_network`, `create_python_sop`, `get_human_edits_since`；`GraphOperation` 扩展 op；`RenderArgs` 去掉 `C:/temp/` 默认值 |
 | `houdini_mcp_bridge/registry.py` | `invoke` 前后挂 Journal 钩子；错误信封附带 `lessons`/`suggestions`；`search` 改为分词打分（任一词命中即候选，按命中数排序） |
-| `houdinimcp_runtime/server.py` | `execute_code` 进 `MUTATING_COMMANDS`，并返回 `scene_diff`；Graph Patch v2（见下）；节点 `userData` 归属标记与事件回调；`lint_network`、`validate_contracts`、`get_human_edits_since` handler |
+| `houdinimcp_runtime/server.py` | `execute_code` 进 `MUTATING_COMMANDS`，并返回 `scene_diff`；四类属性取值与有界几何快照/差异（4.4.1）；Graph Patch v2（见下）；节点 `userData` 归属标记与事件回调；`lint_network`、`validate_contracts`、`get_human_edits_since` handler |
 | `houdinimcp_runtime/lint.py`（新） | Lint 规则实现（只读，不 Cook 昂贵分支；L10 复用已有错误收集） |
 | `skills/.../schemas/` | 新增 `lesson.schema.json`、`proposal.schema.json`；`recipe.schema.json` 支持 v2；`experience.schema.json` 增加 `python_events`、`human_edits`、`lint`、`journal_ref` |
 | `skills/.../scripts/experience_cli.py` | 新子命令：`ingest-journal`（草稿 Experience）、`mine`（聚类出 proposals）、`metrics`（指标聚合） |
@@ -477,7 +519,7 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 
 | 项 | 内容 |
 |---|---|
-| 修改 | `journal.py`；Registry/直连工具挂 Journal；`execute_code` 返回 `scene_diff` 与 `equivalent_patch`；节点归属 userData 与人工修改事件捕获；`get_human_edits_since` |
+| 修改 | 补齐 Vertex/Detail 属性取值并设计有界快照（4.4.1）；`journal.py`；Registry/直连工具挂 Journal；`execute_code` 返回 `scene_diff` 与 `equivalent_patch`；节点归属 userData 与人工修改事件捕获；`get_human_edits_since` |
 | 测试 | Journal 单测（摘要、关闭开关、无绝对路径泄露进仓库）；hython 集成：脚本修改后 diff 正确、事件回调区分 MCP 内/外修改 |
 | 验收 | 跑 3 个真实小任务，Journal 能完整还原调用序列、Python 行为与人工修改 |
 | 价值 | **此阶段完成后即可开始统计现状 Python 回退率，作为后续所有改动的基线** |
@@ -488,7 +530,7 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 |---|---|
 | 修改 | `python_policy.py`（分类器 + 矩阵 + 预算）；`CodeArgs` 增加 justification；默认 `guided`；Hybrid 直连集合调整【行为变更，需确认】；Graph Patch `validate_then_apply` |
 | 测试 | 分类器表驱动单测（每类 ≥10 个样例，含混合与 DYNAMIC）；策略矩阵单测；`test_hybrid_surface.py` 更新直连集合并保留 v1 回退 |
-| 验收 | 用阶段 1 的基线任务重跑：Python 回退率显著下降；GEO_COMPUTE 为 0；任务完成率不下降 |
+| 验收 | 用阶段 1 的基线任务重跑：有 Typed 等价物的无理由回退减少；不可复现输出为 0；原生算法缺口任务与 Hair Tangent Baker 类内嵌实现可完成；任务完成率和可调性不下降 |
 
 ### 阶段 3：补能力缺口（约 1–2 周）
 
@@ -497,13 +539,13 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 | 修改 | Graph Patch v2（Undo 级原子、新 op、bind）；`create_python_sop`；`check_network` |
 | 优先级 | 以阶段 1–2 Journal 中 `equivalent_patch` 的高频形状为准排序；预期 `set_expression`、`insert_between`、`create_controller`、`create_network_box` 排在前面 |
 | 测试 | hython 集成：每个新 op 的成功/失败/回滚；GUI 下 Undo 一步回滚；hython Undo 不可用时的降级路径 |
-| 验收 | 阶段 2 中被拒绝或需 justification 的 Python 场景，≥80% 可由 Typed 路径完成 |
+| 验收 | 阶段 2 中被拒绝或需 justification 的 Python 场景，常见图操作优先由 Typed 路径完成；原生算法缺口按持久化 Python 的产品验收评价，不要求为凑覆盖率改写算法 |
 
 ### 阶段 4：机检与可执行 Recipe（约 1–2 周）
 
 | 项 | 内容 |
 |---|---|
-| 修改 | `lint_network`（L01–L11）、`validate_contracts`；recipe schema v2；先迁移 `curve-instancing` 与 `surface-growth` 两个 recipe；`begin_task` / `end_task` / `get_recipe` / `search_knowledge` |
+| 修改 | 有界几何快照/差异（4.4.1）、`lint_network`（L01–L11）、`validate_contracts`；recipe schema v2；先迁移 `curve-instancing` 与 `surface-growth` 两个 recipe；`begin_task` / `end_task` / `get_recipe` / `search_knowledge` |
 | 测试 | Lint 每条规则正反例（hython 构造网络）；契约校验覆盖 owner/type/size/值域/多帧；`test_experience_system.py` 覆盖 v1/v2 共存 |
 | 验收 | 两个 recipe 各完成 1 次端到端执行，`end_task` 产出通过 schema 校验的 Experience，`checks` 全部机检 |
 
@@ -526,7 +568,7 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 
 | 风险 | 缓解 |
 |---|---|
-| 网关过严导致 Agent 卡死或绕路 | 默认 `guided` 而非 `strict`；拒绝时必须给出可执行替代；预算耗尽转人工而非硬失败；阶段 2 验收要求完成率不下降 |
+| 网关过严导致 Agent 卡死或绕路 | 默认 `guided` 而非 `strict`；拒绝时必须给出可执行替代；Python 次数仅作缺口信号，实际成本或副作用超出现有授权时再处理；阶段 2 验收要求完成率不下降 |
 | AST 分类被绕过（DYNAMIC、间接调用） | 未知即升级；分类器不是安全边界，effect_scope 与人工确认才是；Runtime diff 作为事后核对 |
 | userData 标记写入 HIP | 体积极小、命名空间化；可通过环境变量关闭；`end_task` 可选清理 |
 | 事件回调影响交互性能 | 只挂在 Agent 触达的节点上，回调只入环形缓冲；数量上限 |
@@ -544,13 +586,17 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 1. **默认 Python 策略为 `guided`**；Hybrid 下 `execute_houdini_code` 移出直连（阶段 2 落地，Legacy 不变）。
 2. **允许节点归属标记**：Agent 触达的节点写入 `userData["mcp:op"]`，用于人工修改捕获（阶段 1 落地，可通过环境变量关闭）。
 3. **首批 Recipe v2 迁移对象**：`curve-instancing` 与 `surface-growth`（阶段 4）。
+4. **Python 判据修订（本次用户确认）**：Hair Tangent Baker 的原生算法缺口支持 Python 选型；以 HDA 好用、可调、可复现为核心，按执行归属和实际副作用分类，不设统一 Python 比例或 GEO_COMPUTE 清零目标。
+5. **节点输出观测**：已核对当前只能完整读取点/面属性值；Vertex/Detail 与几何快照差异纳入后续开发，当前未实现。
 
 待定：
 
-4. **Journal 存放位置与保留期**：暂按建议默认 `$HOUDINI_USER_PREF_DIR/houdinimcp/journal/`，保留 30 天，可关闭。
-5. **评测集**：是否有可用于评测的真实任务/HIP（去除私有路径）可以纳入？
+6. **Journal 存放位置与保留期**：暂按建议默认 `$HOUDINI_USER_PREF_DIR/houdinimcp/journal/`，保留 30 天，可关闭。
+7. **评测集**：是否有可用于评测的真实任务/HIP（去除私有路径）可以纳入？
 
 ### 实施进度
+
+- **成功经验已入库**：Hair Tangent Baker 的 Case/Experience/候选 Recipe 与 HDA authoring 路由，提交 `8728d84`。本次反馈修订设计判据与属性观测计划，不代表网关、Vertex/Detail 或快照差异能力已经上线。
 
 - **阶段 0（已完成）**：`execute_code` 进入 Undo Group（GUI 与 hython 均验证为一步撤销，只读代码不留 Undo 记录）；FastMCP `instructions`；直连 `create_node` 支持 `position/parameters`；渲染路径去除 `C:/temp/` 默认值。
   - 顺带修复一个既有缺陷：`create_node` 过去会**静默忽略**元组参数（如 box `size`）和拼错的参数名，Graph Patch 的 `create` op 同样受影响。现在复用 `set_parameters` 的校验路径，失败时报错并销毁半成品节点。
@@ -572,13 +618,14 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 {
   "status": "error",
   "origin": "python_policy",
-  "message": "Python 在图外写入几何（GEO_COMPUTE），违反'逻辑在图里'。",
+  "message": "本次交付仅保留临时几何，缺少可持久化算法和重建入口；请补齐后交付。",
+  "execution_context": {"host": "temporary_command", "persistent_implementation": false, "rebuild_entry": null},
   "classification": {"classes": ["GEO_COMPUTE"], "evidence": ["hou.Geometry.createPoint @ line 4", "setAttribValue @ line 7"]},
   "alternatives": [
     {"tool": "create_wrangle", "hint": "逐点计算用 Point Wrangle，数值用 ch() 暴露"},
     {"tool": "create_python_sop", "hint": "确需 Python（如解析外部数据）时，把代码放进 Python SOP，使其留在网络中"}
   ],
-  "lessons": ["lesson-logic-in-graph", "lesson-wrangle-ch-params"],
+  "lessons": ["lesson-reproducible-asset", "lesson-exposed-controls"],
   "policy_mode": "guided"
 }
 ```

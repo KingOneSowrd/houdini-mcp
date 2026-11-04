@@ -31,6 +31,7 @@
   ],
   "stages": [
     "Discover input/output and effect boundaries",
+    "Assess target-version native nodes and reasonable combinations; distinguish a native algorithm gap from a missing MCP wrapper and record the implementation rationale",
     "Choose native nodes, VEX or embedded Python by product needs and maintainability",
     "Expose semantic controls and neutral defaults",
     "Separate preserved input, working geometry and preview",

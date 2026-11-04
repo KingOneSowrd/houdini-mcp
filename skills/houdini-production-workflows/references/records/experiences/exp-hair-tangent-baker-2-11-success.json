@@ -19,6 +19,7 @@
     "User explicitly accepted this as a successful experience on 2026-11-04"
   ],
   "decisions": [
+    "User clarification (2026-11-04): the core reason for accepting Python was lack of a suitable native Houdini node for the required algorithm; judge delivery by usability, artist controls and reproducibility. This is project-specific rationale, not an exhaustive native-node audit.",
     "Preserve Python algorithms as versioned embedded HDA modules with explicit interfaces.",
     "Use native controls and ramps to expose artist intent.",
     "Keep original input output available and mode-specific topology/UV contracts explicit.",
