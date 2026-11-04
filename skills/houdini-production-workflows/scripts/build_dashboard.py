@@ -42,8 +42,12 @@ TYPE_LABELS = {
 STATUS_ORDER = ("candidate", "validated", "canonical", "deprecated")
 
 
+ACRONYMS = {"rbd", "vat", "usd", "hda", "pcg", "fbx", "lod", "mcp", "pdg", "vex"}
+
+
 def _humanize(identifier: str) -> str:
-    return " ".join(part.capitalize() for part in identifier.replace("_", "-").split("-") if part)
+    parts = identifier.replace("_", "-").split("-")
+    return " ".join(part.upper() if part in ACRONYMS else part.capitalize() for part in parts if part)
 
 
 def _record_identifier(record: dict[str, Any]) -> str:
