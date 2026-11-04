@@ -16,6 +16,7 @@ import shutil
 import sys
 import hashlib
 import copy
+from . import geometry_observation as observation
 # Try PySide6 first (Houdini 21.0+), fall back to PySide2 (older versions)
 try:
     from PySide6 import QtWidgets, QtCore
@@ -69,6 +70,7 @@ class HoudiniMCPServer:
         self.client = None
         self.buffer = b''
         self.timer = None
+        self._geometry_snapshots = observation.SnapshotStore()
         self._plans = {}
         self._completed_operations = {}
 
@@ -265,6 +267,10 @@ class HoudiniMCPServer:
             # Geometry introspection
             "get_geometry_info": self.get_geometry_info,
             "get_geometry_data": self.get_geometry_data,
+            "capture_geometry_snapshot": self.capture_geometry_snapshot,
+            "get_geometry_snapshot_data": self.get_geometry_snapshot_data,
+            "compare_geometry_snapshots": self.compare_geometry_snapshots,
+            "release_geometry_snapshot": self.release_geometry_snapshot,
             "analyze_hda_candidate": self.analyze_hda_candidate,
             "search_hda_definitions": self.search_hda_definitions,
             "get_hda_info": self.get_hda_info,
@@ -1626,60 +1632,124 @@ class HoudiniMCPServer:
             },
         }
 
-    def get_geometry_data(self, path, element="points", attributes=None,
-                          start=0, limit=100):
-        """
-        Read actual attribute values from geometry, paginated.
-        element: 'points' or 'primitives'. attributes: list of names
-        (default: position for points, type info for prims).
-        """
+    def _observation_geometry(self, path, output_index=0, frame=None, allow_cook=True):
         sop = self._resolve_geometry_node(path)
-        geo = sop.geometry()
-        if geo is None:
-            raise ValueError(f"{sop.path()} has no geometry (node may not cook)")
+        if output_index < 0:
+            raise ValueError("output_index must be nonnegative")
+        import math
+        if frame is not None and not math.isfinite(frame):
+            raise ValueError("frame must be finite")
+        actual_frame = float(hou.frame() if frame is None else frame)
+        if not allow_cook:
+            # Conservative preflight, not a sandbox for arbitrary SOP callbacks.
+            if output_index != 0 or actual_frame != float(hou.frame()):
+                raise ValueError("Other frames/outputs require allow_cook=true")
+            if sop.cookCount() == 0 or sop.needsToCook() or sop.errors():
+                raise ValueError("Geometry is not clean/cooked; inspect costs then opt in with allow_cook=true")
+        geo = sop.geometry(output_index) if frame is None else sop.geometryAtFrame(frame, output_index)
+        if geo is None or sop.errors():
+            raise ValueError("No valid geometry at output %s: %s" % (output_index, sop.errors()))
+        return sop, geo, actual_frame
 
-        start = max(0, int(start))
-        limit = max(1, min(int(limit), 500))
-
-        if element == "points":
-            total = geo.intrinsicValue("pointcount")
-            available = {a.name(): a for a in geo.pointAttribs()}
-            iterator = geo.iterPoints()
-        elif element == "primitives":
-            total = geo.intrinsicValue("primitivecount")
-            available = {a.name(): a for a in geo.primAttribs()}
-            iterator = geo.iterPrims()
-        else:
-            raise ValueError(f"element must be 'points' or 'primitives', got '{element}'")
-
-        if attributes:
-            missing = [a for a in attributes if a not in available]
-            if missing:
-                raise ValueError(
-                    f"Attribute(s) {missing} not found on {element}. "
-                    f"Available: {sorted(available)}"
-                )
-            selected = [available[a] for a in attributes]
-        else:
-            selected = [available["P"]] if "P" in available else []
-
+    def get_geometry_data(self, path, element="points", attributes=None,
+                          start=0, limit=100, output_index=0, frame=None,
+                          allow_cook=True, max_bytes=262144,
+                          max_value_items=128, max_string_length=2048):
+        sop, geo, actual_frame = self._observation_geometry(path, output_index, frame, allow_cook)
+        page = observation.read_rows(geo, element, attributes, max(0, int(start)),
+            max(1, min(int(limit), 500)), max(4096, min(int(max_bytes), 2097152)),
+            max(1, min(int(max_value_items), 1024)), max(1, min(int(max_string_length), 8192)))
+        # Preserve the legacy point/primitive row shape; new snapshots use a
+        # nested attributes mapping to avoid colliding with locator fields.
         rows = []
-        for elem in islice(iterator, start, start + limit):
-            row = {"number": elem.number()}
-            if element == "primitives":
-                row["type"] = elem.type().name()
-            for attrib in selected:
-                row[attrib.name()] = self._jsonable(elem.attribValue(attrib))
-            rows.append(row)
+        for row in page["data"]:
+            flat = {k: v for k, v in row.items() if k not in {"attributes", "truncated_attributes"}}
+            flat.update(row["attributes"])
+            rows.append(flat)
+        cuts = [{"row_offset": i + page["start"], "attributes": r["truncated_attributes"]}
+                for i, r in enumerate(page["data"]) if r["truncated_attributes"]]
+        page.update(node=sop.path(), frame=actual_frame, output_index=output_index,
+                    data=rows, truncated_attribute_values=cuts,
+                    consistency="live page; capture a snapshot for stable multi-page reads")
+        return page
 
-        return {
-            "node": sop.path(),
-            "element": element,
-            "total": total,
-            "start": start,
-            "count": len(rows),
-            "data": rows,
-        }
+    def capture_geometry_snapshot(self, path, element="points", attributes=None,
+                                  max_elements=10000, max_bytes=1048576,
+                                  output_index=0, frame=None, allow_cook=False,
+                                  max_value_items=128, max_string_length=2048):
+        if not 1 <= max_elements <= 100000 or not 4096 <= max_bytes <= 2097152:
+            raise ValueError("Snapshot limits out of range")
+        sop, geo, actual_frame = self._observation_geometry(path, output_index, frame, allow_cook)
+        # Determine metadata cost before traversing rows; avoid repeatedly
+        # serializing/dropping a large captured prefix to fit the byte budget.
+        page = observation.read_rows(geo, element, attributes, 0, 0,
+            max_bytes, max_value_items, max_string_length)
+        attributes_schema = {owner: observation.schema(geo, owner) for owner in observation.OWNERS}
+        snapshot = dict(page, node=sop.path(), frame=actual_frame, output_index=output_index,
+            schema=attributes_schema, topology=observation.topology(geo),
+            inputs=[{"input_index": c.inputIndex(), "node": c.inputNode().path(),
+                     "output_index": c.outputIndex()} for c in sop.inputConnections()],
+            captured_at=time.time(), cook_allowed=allow_cook)
+        metadata_bytes = len(json.dumps(snapshot, ensure_ascii=True, allow_nan=False).encode())
+        row_budget = max_bytes - metadata_bytes - 256
+        if row_budget <= 0:
+            raise ValueError("Snapshot metadata exceeds max_bytes; raise the bound")
+        snapshot.update(observation.read_rows(geo, element, attributes, 0, max_elements,
+            row_budget, max_value_items, max_string_length))
+        encoded_size = len(json.dumps(snapshot, ensure_ascii=True, allow_nan=False).encode())
+        if encoded_size > max_bytes:
+            raise ValueError("Snapshot exceeds max_bytes; select fewer attributes or raise the bound")
+        key, evicted = self._geometry_snapshots.add(snapshot)
+        return {k: v for k, v in snapshot.items() if k != "data"} | {
+            "snapshot_id": key, "stored_bytes": encoded_size, "evicted_snapshot_ids": evicted,
+            "lifetime": "runtime session; FIFO eviction at 8 snapshots or 16 MiB; explicit release supported"}
+
+    def get_geometry_snapshot_data(self, snapshot_id, start=0, limit=100, max_bytes=262144):
+        if start < 0 or not 1 <= limit <= 500 or not 4096 <= max_bytes <= 2097152:
+            raise ValueError("Invalid snapshot page bounds")
+        snapshot = self._geometry_snapshots.get(snapshot_id)
+        rows, used = [], 0
+        for row in snapshot["data"][start:start + limit]:
+            size = len(json.dumps(row, ensure_ascii=True, allow_nan=False).encode()) + 2
+            if used + size > max_bytes:
+                if not rows:
+                    raise ValueError("Row exceeds page max_bytes; increase the page bound")
+                break
+            rows.append(row)
+            used += size
+        return {"snapshot_id": snapshot_id, "node": snapshot["node"], "element": snapshot["element"],
+                "frame": snapshot["frame"], "start": start, "count": len(rows), "data": rows,
+                "captured_count": snapshot["count"], "source_total": snapshot["total"],
+                "next_start": start + len(rows) if start + len(rows) < snapshot["count"] else None,
+                "rows_complete": snapshot["rows_complete"]}
+
+    def compare_geometry_snapshots(self, before_id, after_id, key_attribute=None,
+                                   assume_index_correspondence=False,
+                                   absolute_tolerance=1e-6, relative_tolerance=1e-6,
+                                   max_examples=5):
+        if not 0 <= max_examples <= 10:
+            raise ValueError("max_examples must be 0..10")
+        result = observation.compare(self._geometry_snapshots.get(before_id),
+            self._geometry_snapshots.get(after_id), key_attribute, assume_index_correspondence,
+            absolute_tolerance, relative_tolerance, max_examples)
+        result.update(before_id=before_id, after_id=after_id)
+        # Value examples can be large. Drop examples rather than return an
+        # unbounded response, retaining all aggregate comparison results.
+        if len(json.dumps(result, ensure_ascii=True, allow_nan=False).encode()) > 262144:
+            for attr in result["attributes"]:
+                attr.pop("examples", None)
+            result["examples_omitted"] = True
+        if len(json.dumps(result, ensure_ascii=True, allow_nan=False).encode()) > 262144:
+            for field in ("schema_added", "schema_removed", "schema_changed", "attributes",
+                          "selected_only_before", "selected_only_after"):
+                if field in result:
+                    result[field + "_count"] = len(result[field])
+                    result[field] = []
+            result["details_omitted"] = "Comparison detail exceeds 256 KiB; compare fewer attributes"
+        return result
+
+    def release_geometry_snapshot(self, snapshot_id):
+        return self._geometry_snapshots.release(snapshot_id)
 
     # -------------------------------------------------------------------------
     # set_material (now completed)

@@ -208,10 +208,49 @@ class SetWrangleArgs(ToolArguments):
 
 class GeometryDataArgs(ToolArguments):
     path: str
-    element: str = "points"
-    attributes: Optional[List[str]] = None
+    element: Literal["points", "primitives", "vertices", "detail"] = "points"
+    attributes: Optional[List[str]] = Field(default=None, max_length=64)
     start: int = Field(default=0, ge=0)
     limit: int = Field(default=100, ge=1, le=500)
+    output_index: int = Field(default=0, ge=0, le=63)
+    frame: Optional[float] = Field(default=None, allow_inf_nan=False)
+    allow_cook: bool = True
+    max_bytes: int = Field(default=262144, ge=4096, le=2097152)
+    max_value_items: int = Field(default=128, ge=1, le=1024)
+    max_string_length: int = Field(default=2048, ge=1, le=8192)
+
+
+class GeometrySnapshotArgs(ToolArguments):
+    path: str
+    element: Literal["points", "primitives", "vertices", "detail"] = "points"
+    attributes: Optional[List[str]] = Field(default=None, max_length=64)
+    output_index: int = Field(default=0, ge=0, le=63)
+    frame: Optional[float] = Field(default=None, allow_inf_nan=False)
+    allow_cook: bool = False
+    max_elements: int = Field(default=10000, ge=1, le=100000)
+    max_bytes: int = Field(default=1048576, ge=4096, le=2097152)
+    max_value_items: int = Field(default=128, ge=1, le=1024)
+    max_string_length: int = Field(default=2048, ge=1, le=8192)
+
+
+class SnapshotIdArgs(ToolArguments):
+    snapshot_id: str = Field(min_length=1, max_length=64)
+
+
+class SnapshotPageArgs(SnapshotIdArgs):
+    start: int = Field(default=0, ge=0)
+    limit: int = Field(default=100, ge=1, le=500)
+    max_bytes: int = Field(default=262144, ge=4096, le=2097152)
+
+
+class CompareGeometryArgs(ToolArguments):
+    before_id: str = Field(min_length=1, max_length=64)
+    after_id: str = Field(min_length=1, max_length=64)
+    key_attribute: Optional[str] = None
+    assume_index_correspondence: bool = False
+    absolute_tolerance: float = Field(default=1e-6, ge=0, allow_inf_nan=False)
+    relative_tolerance: float = Field(default=1e-6, ge=0, allow_inf_nan=False)
+    max_examples: int = Field(default=5, ge=0, le=10)
 
 
 class RenderSingleArgs(ToolArguments):
@@ -347,7 +386,11 @@ def build_registry(
         ToolSpec("create_wrangle", "vex", "Create, wire and validate an Attribute Wrangle SOP.", CreateWrangleArgs, remote("create_wrangle"), [node_doc("sop", "attribwrangle")], ("vex", "wrangle", "code"), True, True, "medium"),
         ToolSpec("set_wrangle_code", "vex", "Replace and optionally compile-check VEX on a wrangle.", SetWrangleArgs, remote("set_wrangle_code"), [node_doc("sop", "attribwrangle")], ("vex", "wrangle", "compile"), True, True, "medium"),
         ToolSpec("get_geometry_info", "geometry", "Summarize counts, bounds, attributes and groups.", NodePathArgs, remote("get_geometry_info"), [hom("hou/Geometry.txt", "hou.Geometry")], ("geometry", "attributes", "bounding box", "counts")),
-        ToolSpec("get_geometry_data", "geometry", "Read paginated point or primitive attribute values.", GeometryDataArgs, remote("get_geometry_data"), [hom("hou/Geometry.txt", "hou.Geometry")], ("points", "primitives", "attributes", "data"), result_size="bounded_large"),
+        ToolSpec("get_geometry_data", "geometry", "Read bounded point, primitive, vertex or detail values. May cook by default; allow_cook=false requires clean current-frame output 0. Use snapshots for stable pagination.", GeometryDataArgs, remote("get_geometry_data"), [hom("hou/Geometry.txt", "hou.Geometry"), hom("hou/SopNode.txt", "hou.SopNode.geometry")], ("points", "primitives", "vertices", "detail", "uv", "attributes", "data"), result_size="bounded_large"),
+        ToolSpec("capture_geometry_snapshot", "geometry", "Capture detached selected attribute values, schema and bounded topology. Defaults to clean current-frame output 0 without cook opt-in; other frames/outputs require allow_cook. Session FIFO: 8 snapshots / 16 MiB.", GeometrySnapshotArgs, remote("capture_geometry_snapshot"), [hom("hou/Geometry.txt", "hou.Geometry"), hom("hou/SopNode.txt", "hou.SopNode.geometryAtFrame")], ("geometry", "snapshot", "attributes", "before", "after", "uv"), result_size="bounded_large"),
+        ToolSpec("get_geometry_snapshot_data", "geometry", "Read a stable page of detached snapshot values without evaluating Houdini nodes.", SnapshotPageArgs, remote("get_geometry_snapshot_data"), [hom("hou/Geometry.txt", "hou.Geometry")], ("snapshot", "page", "attributes"), result_size="bounded_large"),
+        ToolSpec("compare_geometry_snapshots", "geometry", "Compare counts, all-owner schema and captured attribute values. Requires a unique captured integer/string key or explicit index correspondence with equal complete topology; detail needs no key. Partial matches never prove full equality.", CompareGeometryArgs, remote("compare_geometry_snapshots"), [hom("hou/Geometry.txt", "hou.Geometry"), hom("hou/Attrib.txt", "hou.Attrib")], ("geometry", "compare", "diff", "attributes", "uv", "changes"), result_size="bounded_large"),
+        ToolSpec("release_geometry_snapshot", "geometry", "Release a detached snapshot from runtime session memory; does not change scene geometry.", SnapshotIdArgs, remote("release_geometry_snapshot"), [hom("hou/Geometry.txt", "hou.Geometry")], ("snapshot", "release", "memory")),
         ToolSpec("render_single_view", "render", "Render one generated view.", RenderSingleArgs, remote("render_single_view"), [hom("hou/GeometryViewport.txt", "hou.GeometryViewport")], ("render", "viewport", "image"), True, True, "medium", effect_scope="disk", rollback_strategy="none", prerequisites=("Houdini UI session",)),
         ToolSpec("render_quad_views", "render", "Render four orthographic or perspective views.", RenderQuadArgs, remote("render_quad_view"), [hom("hou/GeometryViewport.txt", "hou.GeometryViewport")], ("render", "quad", "views"), True, True, "medium", effect_scope="disk", rollback_strategy="none", prerequisites=("Houdini UI session",)),
         ToolSpec("render_specific_camera", "render", "Render from an existing camera node.", RenderCameraArgs, remote("render_specific_camera"), [hom("hou/ObjNode.txt", "hou.ObjNode")], ("render", "camera", "image"), True, True, "medium", effect_scope="disk", rollback_strategy="none", prerequisites=("Houdini UI session",)),

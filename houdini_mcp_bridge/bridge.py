@@ -906,17 +906,22 @@ def get_geometry_info(ctx: Context, path: str) -> dict:
 @legacy_tool()
 def get_geometry_data(ctx: Context, path: str, element: str = "points",
                       attributes: List[str] = None, start: int = 0,
-                      limit: int = 100) -> dict:
+                      limit: int = 100, output_index: int = 0,
+                      frame: Optional[float] = None, allow_cook: bool = True,
+                      max_bytes: int = 262144, max_value_items: int = 128,
+                      max_string_length: int = 2048) -> dict:
+    """Read point/primitive/vertex/detail values with bounded pages.
+
+    May cook by default. Snapshot tools provide detached, stable pagination.
+    Vertex rows include primitive_number, vertex_index and point_number.
+    Long values are truncated explicitly; NaN/Inf use JSON marker objects.
     """
-    Read actual attribute values from geometry, paginated (limit capped at
-    500 — use start to page through large geometry). element: 'points' or
-    'primitives'. attributes: names to read (default: P for points); call
-    get_geometry_info first to see what exists.
-    """
-    params = {"path": path, "element": element, "start": start, "limit": limit}
-    if attributes:
-        params["attributes"] = attributes
-    return _houdini_call("get_geometry_data", params)
+    return tool_registry.invoke("get_geometry_data", {
+        "path": path, "element": element, "attributes": attributes,
+        "start": start, "limit": limit, "output_index": output_index,
+        "frame": frame, "allow_cook": allow_cook, "max_bytes": max_bytes,
+        "max_value_items": max_value_items, "max_string_length": max_string_length,
+    })
 
 
 # -------------------------------------------------------------------

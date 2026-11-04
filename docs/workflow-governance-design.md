@@ -297,7 +297,7 @@ AST 类别仅是操作线索。必须结合执行宿主（临时命令 / SOP / �
 
 这两个能力让"完成"从"节点建好了"变成"lint 通过 + 契约通过"，也为闭环提供**客观度量**。
 
-### 4.4.1 节点输出属性观测与前后差异（新增优先项，尚未实现完整差异工具）
+### 4.4.1 节点输出属性观测与前后差异（基础能力已实现）
 
 这是 Agent 制作时对应 Geometry Spreadsheet 的观测环节：**先看输入属性 → 修改 → 看输出变化 → 核对预期契约**。网络结构 diff 说明“改了哪些节点”，几何属性 diff 才说明“结果实际变了什么”；两者都需要。
 
@@ -306,14 +306,16 @@ AST 类别仅是操作线索。必须结合执行宿主（临时命令 / SOP / �
 | 能力 | 当前范围 | 边界 |
 |---|---|---|
 | `get_geometry_info(path)` | 指定 SOP 输出的点/面/顶点数、包围盒、Point/Primitive/Vertex/Detail 属性名、数据类型、tuple size、点/面组名 | 几何容器会解析到 Display SOP；不是每种 Houdini 上下文、每个输出端口的通用观测器 |
-| `get_geometry_data(path, element, attributes, start, limit)` | 点或面属性实际值，默认 100 条、最多 500 条/页；仓库 Hybrid 经 Catalog，Legacy 直连 | 不支持 Vertex 和 Detail 值；不提供帧、输出端口或持久快照参数 |
+| `get_geometry_data(path, element, attributes, start, limit)` | Point/Primitive/Vertex/Detail 实际值，最多 500 条/页；支持 output_index、frame、Cook 开关与值/字节上限 | 实时分页不是冻结快照；数组/字符串可能截断，必须检查标记 |
+| `capture_geometry_snapshot` / `get_geometry_snapshot_data` | 单 owner 的有界、脱离节点后续变化的快照与稳定分页；带全 owner 属性结构、拓扑摘要 | 内存会话存储，8 份 / 16 MiB FIFO；重启失效，不是持久磁盘快照 |
+| `compare_geometry_snapshots` / `release_geometry_snapshot` | 按唯一属性键或显式稳定索引对应比较，报告结构/值变化与覆盖率；释放快照 | 索引对应需完整相同拓扑且调用方确认身份；不自动猜测跨拓扑对应 |
 | `get_network_snapshot` | 节点、连接、可选参数、revision | 不包含逐元素几何属性差异 |
 
 实现依据：`houdinimcp_runtime/server.py` 的 `get_geometry_info/get_geometry_data`、`houdini_mcp_bridge/catalog.py` 的 `GeometryDataArgs`。当前读取调用 `sop.geometry()`，可能触发 Cook；不是保证无计算的缓存读取，昂贵/写出节点不能自动全图扫描。
 
 **第一步：补齐四种 owner 的取值。** 扩展 `get_geometry_data` 支持 `vertices`、`detail`；顶点返回 vertex id、primitive number、local vertex index、point number。不能拿 Point UV 代替 Vertex UV，接缝两侧同一个点可以有不同顶点值。Detail 返回全局值；数组、字典、长字符串等需字节/元素上限和截断标记，保持 points/primitives 兼容。
 
-**第二步：有界几何快照与差异。** 拟新增 Catalog 能力 `capture_geometry_snapshot`、`compare_geometry_snapshots`（名称为提案）：
+**第二步：有界几何快照与差异。** 基础 Catalog 能力 `capture_geometry_snapshot`、`compare_geometry_snapshots` 已实现，配套稳定分页与释放工具。具体接口与限制见 [geometry-observation.md](geometry-observation.md)。以下为完整演进目标，其中组成员差异、方向夹角和空间对应尚未实现：
 
 - 两种比较：同一时间的上游/下游输出；同一节点修改前/后的不可变快照。修改前必须保存值或受控摘要，修改后重新读两次无法找回旧状态。
 - 快照记录节点、实际帧/时间、输入连接、输出选择、拓扑摘要、属性 owner/name/storage/type/size、选择范围、采样策略、截断/覆盖率、Cook 策略与错误。多输出端口先验证运行时可支持范围，不能默认总是第 0 输出或把 HDA 的某个内部分支当作全部输出。
@@ -587,7 +589,7 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 2. **允许节点归属标记**：Agent 触达的节点写入 `userData["mcp:op"]`，用于人工修改捕获（阶段 1 落地，可通过环境变量关闭）。
 3. **首批 Recipe v2 迁移对象**：`curve-instancing` 与 `surface-growth`（阶段 4）。
 4. **Python 判据修订（本次用户确认）**：Hair Tangent Baker 的原生算法缺口支持 Python 选型；以 HDA 好用、可调、可复现为核心，按执行归属和实际副作用分类，不设统一 Python 比例或 GEO_COMPUTE 清零目标。
-5. **节点输出观测**：已核对当前只能完整读取点/面属性值；Vertex/Detail 与几何快照差异纳入后续开发，当前未实现。
+5. **节点输出观测**：已补齐 Vertex/Detail 与有界几何快照/差异、稳定分页和释放；保留组成员差异、方向夹角、跨拓扑空间对应作为后续扩展。
 
 待定：
 
@@ -596,7 +598,9 @@ Lessons 在三个时机注入：`begin_task` 返回、Typed 工具报错时附�
 
 ### 实施进度
 
-- **成功经验已入库**：Hair Tangent Baker 的 Case/Experience/候选 Recipe 与 HDA authoring 路由，提交 `8728d84`。本次反馈修订设计判据与属性观测计划，不代表网关、Vertex/Detail 或快照差异能力已经上线。
+- **属性观测基础能力（已完成）**：四类属性值、帧/输出端口选择、有界内存快照、稳定分页、唯一键/显式索引比较、释放与 FIFO 淘汰。纯 Python 单测、独立 Hython 真实几何与 Catalog/TCP 集成通过；原有 Hybrid/Legacy 表面保持不变。文档与运行限制见 [geometry-observation.md](geometry-observation.md)。
+
+- **成功经验已入库**：Hair Tangent Baker 的 Case/Experience/候选 Recipe 与 HDA authoring 路由，提交 `8728d84`。首次反馈仅修订设计判据与属性观测计划；当前属性观测实现见上一项，Python 网关仍是设计计划。
 
 - **阶段 0（已完成）**：`execute_code` 进入 Undo Group（GUI 与 hython 均验证为一步撤销，只读代码不留 Undo 记录）；FastMCP `instructions`；直连 `create_node` 支持 `position/parameters`；渲染路径去除 `C:/temp/` 默认值。
   - 顺带修复一个既有缺陷：`create_node` 过去会**静默忽略**元组参数（如 box `size`）和拼错的参数名，Graph Patch 的 `create` op 同样受影响。现在复用 `set_parameters` 的校验路径，失败时报错并销毁半成品节点。
