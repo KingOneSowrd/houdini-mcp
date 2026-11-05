@@ -74,6 +74,10 @@ successful tutorial does not prove production acceptance in every project.
 
 Useful maintenance commands:
 
+On Windows, double-click `open-dashboard.cmd` in the repository root to rebuild
+the latest dashboard and open it in your default browser. The launcher works
+from any working directory and uses Python 3 (or `py` / `uv` when available).
+
 ```powershell
 python skills/houdini-production-workflows/scripts/experience_cli.py validate
 python skills/houdini-production-workflows/scripts/experience_cli.py assess
