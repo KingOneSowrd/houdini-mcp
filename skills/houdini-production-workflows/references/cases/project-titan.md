@@ -1,5 +1,10 @@
 # Project Titan evidence summary
 
+The separately supplied [Titan EVO HDA collection](titan-evo.md) was inspected
+on 2026-11-05. Its 18-library inventory, source hashes and version boundaries
+are recorded separately. Related Titan editions are not independent production
+acceptance evidence merely because their binaries differ.
+
 Project Titan is a SideFX game-content case corpus, not a universal template. The inspected local corpus contains twelve HDA definitions, three standalone tutorial HIPs, and one train-destruction workflow with many backups. It demonstrates fifteen useful workflow families.
 
 Shared evidence includes contract-first inputs, point/attribute-driven instancing, deterministic seeds, proxy-first construction, simulation followed by a frozen or cached result, engine-specific material/instance attributes, and multi-artifact outputs such as FBX, EXR, JSON, and `.bgeo.sc`.

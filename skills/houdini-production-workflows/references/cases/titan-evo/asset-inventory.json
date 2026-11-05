@@ -1,0 +1,2704 @@
+{
+  "schema_version": 1,
+  "kind": "hda_collection_structure_evidence",
+  "intake_date": "2026-11-05",
+  "source_root_locator": "Titan_EVO_UE_Project_and_HDAs/",
+  "source_files": {
+    "Titan_EVO_UE_Project_and_HDAs/Installer_Houdini_Titan_Package_win.bat": "1fd8f2ac7d093683520f051721f010901127cf126e408b2a9afd61725fa20dda",
+    "Titan_EVO_UE_Project_and_HDAs/README.md": "2aba75c5395ca916a9d6f234ba0a11732608ee2afecc6af92fdce06c6c96adfa",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Billboard_Generator.hda": "0f8057f56f074cea5156eff3b3236dfcbab2a2155df0f24da8e61967101b8a03",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Cable_tool.hda": "ed9066de8b34b8b594736f08c59ce86eb3fa971c9a59836c2353c800e79a69a5",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Cloth_tool.hda": "8104e81fd1d55c9619bce2b97443be6e72133074374ad6b4ebc99f36fc34bc3b",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Constructions.hda": "38161624e686f4b105013da781e99dd4ec5c01ba3d9c3f6a267a41be645155bf",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Fence_Tool.hda": "fd456bdb28de9fd4b507c035d86ff4e7414e1194c3aa47cc3b9424fc39d93b90",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Pipes_Curves.hda": "998c945987089aeebe247cfa05b91e06360ef26f9626a89a59e1dc9126eb95fc",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Platforms.hda": "3c00b49b0cbda15706b47b2a4136088ad997afa40ee098f5d0d136f8699e3785",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Scaffold.hda": "cc4470cccb371b11596cb7d089b973f36055779e769068380d4d402febf4df0b",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_SkyTrain.hda": "e84fbe90de4a4beefeae30a26941964d7ae3d92c99db0a54b3736a1ad1b4e50c",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_StackingTool.hda": "1bc4b6c278d913327df213dbfdb82f0b3eee8bd26a2b92384d6ab5142a9b74d6",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Titan_Train_rails.hda": "2efc45ef7f6a12aee5657267051810a526da480ba1df785b7c513115b3a3efef",
+    "Titan_EVO_UE_Project_and_HDAs/otls/Tutorial_Building_Generator.hda": "0a5829f0873268ef8c6098b0aef82eb7e2a2fbda65aee821e0a45c62701fec3e",
+    "Titan_EVO_UE_Project_and_HDAs/otls/annam.ivy.1.0.hda": "b9ce38e61ebb320ce2b8b673d2798a50a10d206bc75c1d0877fce67e1ddc1a2c",
+    "Titan_EVO_UE_Project_and_HDAs/otls/annam.shrub.1.0.hda": "427ea0e4e11147b628b9c07b5e6d12297a8566758123d412c76c8a79a497dce8",
+    "Titan_EVO_UE_Project_and_HDAs/otls/electric_cable_tool_v1.hda": "c227f4c3ab5913707a7499d222634ee4cc01544f3d5172ae7c849df1bd975a5b",
+    "Titan_EVO_UE_Project_and_HDAs/otls/electric_pole.hda": "2cfc3033bb5215876579c110ef97d2ce82815a701614308d71de5ba1c0b3c177",
+    "Titan_EVO_UE_Project_and_HDAs/otls/sop_titan_simple_crates.1.0.hda": "d0765837edcbee40b4c994de9cd141332e3c790d6c4d6680ea033aff9f0e0f8b",
+    "Titan_EVO_UE_Project_and_HDAs/otls/sop_tut_pipe_greeble-1.0.hda": "0d5aae942c86f5f6a2de18ceff5cbb167455d7f6e131593497533638df2107da"
+  },
+  "collection_fingerprint": "sha256:70188195c8c70a273af9ecedafebde2db5bfe60407d01f05cfa9718a5f1fa9ed",
+  "declared_environment": {
+    "houdini": "22 (README claim)",
+    "unreal": "5.8 (README claim)",
+    "dependencies": [
+      "Houdini Engine for Unreal Engine",
+      "SideFX Labs Tools"
+    ]
+  },
+  "inspection_environment": {
+    "houdini": "21.0.440",
+    "mode": "isolated Hython, Manual update, existing inspect_houdini_case.py functions plus metadata review",
+    "explicit_geometry_cook_requested": false,
+    "source_library_hashes_unchanged": true,
+    "initialization_cook_count_sum": 4,
+    "initialization_cook_nodes": [
+      {
+        "asset": "electric_pole.hda",
+        "node": "timeshift2",
+        "type": "timeshift",
+        "count": 1
+      },
+      {
+        "asset": "Titan_StackingTool.hda",
+        "node": "Data_table_example",
+        "type": "stash",
+        "count": 1
+      },
+      {
+        "asset": "Tutorial_Building_Generator.hda",
+        "node": "Model_example1",
+        "type": "stash",
+        "count": 1
+      },
+      {
+        "asset": "Tutorial_Building_Generator.hda",
+        "node": "Model_example2",
+        "type": "stash",
+        "count": 1
+      }
+    ]
+  },
+  "evidence_limits": [
+    "No functional, geometry, performance or engine acceptance; no source save or export.",
+    "Counts include expanded installed builtin/Labs networks; not authored complexity or independent examples.",
+    "Interface examples and note text are bounded; source assets remain execution authority.",
+    "Attribute references are code/parameter mentions, not observed cooked owner/type/value.",
+    "No duplicate SHA256 among the 18 libraries and the 12 libraries in TiTan Project at intake; related editions are not independent evidence.",
+    "Local package provenance is user-designated authority and README self-description, not independently authenticated upstream release."
+  ],
+  "assets": [
+    {
+      "file": "otls/annam.ivy.1.0.hda",
+      "sha256": "b9ce38e61ebb320ce2b8b673d2798a50a10d206bc75c1d0877fce67e1ddc1a2c",
+      "type": "annam::ivy::1.0",
+      "label": "Ivy",
+      "category": "Sop",
+      "input_range": [
+        0,
+        3
+      ],
+      "workflows": [
+        "surface-growth"
+      ],
+      "node_count_including_expanded_dependencies": 926,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 144,
+        "switch": 86,
+        "null": 73,
+        "merge": 37,
+        "attribpromote": 33,
+        "object_merge": 29,
+        "attribdelete": 28,
+        "parameter": 27,
+        "switchif": 26,
+        "dopimport": 21,
+        "compile_begin": 21,
+        "output": 18,
+        "xform": 17,
+        "timeshift": 16,
+        "block_begin": 15,
+        "groupcreate": 14,
+        "split": 12,
+        "blast": 12,
+        "subnet": 11,
+        "compile_end": 11,
+        "attribcopy": 9,
+        "assemble": 9,
+        "enablesolver": 8,
+        "copytopoints::2.0": 8,
+        "attribcreate::2.0": 8,
+        "normal": 8,
+        "resample": 8,
+        "attribnoise::2.0": 7,
+        "block_end": 7,
+        "groupdelete": 7,
+        "color": 6,
+        "bind": 6,
+        "polyframe": 6,
+        "stash": 6,
+        "sopsolver::2.0": 5,
+        "add": 5,
+        "sweep::2.0": 5,
+        "attribtransfer": 5,
+        "attribrandomize": 4,
+        "geometrywrangle": 4,
+        "sopgeo": 4,
+        "splitpoints": 4,
+        "unpack": 4,
+        "sort": 4,
+        "enumerate": 4,
+        "connectivity": 4,
+        "delete": 4,
+        "connectadjacentpieces": 3,
+        "clean": 3,
+        "attribremap": 3,
+        "dopnet": 3,
+        "dopimport::2.0": 3,
+        "xformpieces": 3,
+        "sphere": 3,
+        "grouppromote": 3,
+        "ray": 3,
+        "labs::voxelmesh::2.0": 2,
+        "rbdpackedobject": 2,
+        "glueconrel": 2,
+        "hardconrel": 2,
+        "attribvop": 2,
+        "snippet": 2,
+        "switchsolver": 2,
+        "switchvalue": 2,
+        "pointdeform": 2,
+        "suboutput": 2,
+        "subinput": 2,
+        "attribute": 2,
+        "python": 2,
+        "convertline": 2,
+        "heightfield_xform": 2,
+        "solver": 2,
+        "emptyobject": 2,
+        "sopsolver": 2,
+        "invoke": 2,
+        "polypath": 2,
+        "scatter::2.0": 2,
+        "findshortestpath": 2,
+        "attribcast": 2,
+        "fuse::2.0": 2,
+        "uvtransform::2.0": 2,
+        "attribblur": 2,
+        "carve": 2,
+        "annam::ivy::1.0": 1,
+        "rbdbulletsolver": 1,
+        "groundplane": 1,
+        "gravity": 1,
+        "rigidbodysolver": 1,
+        "constraintnetwork": 1,
+        "bulletsoftconrel": 1,
+        "conetwistconrel": 1,
+        "springconrel": 1,
+        "sliderconrel": 1,
+        "impactanalysis": 1,
+        "rest": 1,
+        "staticobject": 1,
+        "popdrag": 1,
+        "popdragspin": 1,
+        "popwrangle": 1,
+        "renderparmsvolatile": 1
+      },
+      "interface_parameter_count": 67,
+      "interface_examples": [
+        {
+          "name": "ivy_type",
+          "label": "Type",
+          "type": "Menu"
+        },
+        {
+          "name": "ivy_density",
+          "label": "Density",
+          "type": "Float"
+        },
+        {
+          "name": "ivy_global_seed",
+          "label": "Global Seed",
+          "type": "Float"
+        },
+        {
+          "name": "hanging_vine_t",
+          "label": "Hanging Vines",
+          "type": "Toggle"
+        },
+        {
+          "name": "leaf_t",
+          "label": "Leaves",
+          "type": "Toggle"
+        },
+        {
+          "name": "root_t",
+          "label": "Roots",
+          "type": "Toggle"
+        },
+        {
+          "name": "target_growth",
+          "label": "Targeted Growth",
+          "type": "Menu"
+        },
+        {
+          "name": "voxelmesh1_resolution",
+          "label": "Remesh input",
+          "type": "Int"
+        },
+        {
+          "name": "ivy_noise_type",
+          "label": "Noise Type",
+          "type": "Menu"
+        },
+        {
+          "name": "ivy_noise_treshold",
+          "label": "Threshold",
+          "type": "Float"
+        },
+        {
+          "name": "ivy_noise_size",
+          "label": "Noise Size",
+          "type": "Float"
+        },
+        {
+          "name": "ivy_noise_offset",
+          "label": "Noise Offset",
+          "type": "Float"
+        },
+        {
+          "name": "sim_t",
+          "label": "Enable",
+          "type": "Toggle"
+        },
+        {
+          "name": "sim_frame",
+          "label": "Frame",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::calculate_occlusion::2.0",
+        "labs::voxelmesh::2.0"
+      ],
+      "author_notes_bounded_500_chars": [
+        "get bound surface",
+        "slightly offset surface to prevent intersection",
+        "noise mask and density for ivies to grow on",
+        "height split for vines and roots",
+        "pre generated leaf cards with uv and wind mask in red channel",
+        "simulate fallen leaves on collision geometry"
+      ],
+      "output_node_locations": [
+        "rbdbulletsolver1/dopnet/output",
+        "rbdbulletsolver1/dopnet/Constraint_Solver/output0",
+        "rbdbulletsolver1/dopnet/emission/output0",
+        "rbdbulletsolver1/dopnet/Constraint_Update_Solver/output0",
+        "rbdbulletsolver1/dopnet/emission_geos/OUT",
+        "rbdbulletsolver1/GEOMETRY",
+        "rbdbulletsolver1/PROXY_GEOMETRY",
+        "rbdbulletsolver1/CONSTRAINT_GEOMETRY",
+        "rbdbulletsolver1/SIM_POINTS",
+        "rbdbulletsolver1/repack/output0",
+        "rbdbulletsolver1/guide/output_simgeo",
+        "rbdbulletsolver1/guide/output_guide"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/annam.shrub.1.0.hda",
+      "sha256": "427ea0e4e11147b628b9c07b5e6d12297a8566758123d412c76c8a79a497dce8",
+      "type": "annam::shrub::1.0",
+      "label": "Shrub Tool",
+      "category": "Sop",
+      "input_range": [
+        0,
+        1
+      ],
+      "workflows": [
+        "surface-growth"
+      ],
+      "node_count_including_expanded_dependencies": 147,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 21,
+        "null": 14,
+        "object_merge": 6,
+        "attribpromote": 6,
+        "stash": 6,
+        "attribrandomize": 5,
+        "switch": 5,
+        "xform": 5,
+        "merge": 4,
+        "split": 4,
+        "groupcreate": 4,
+        "copytopoints::2.0": 4,
+        "attribcast": 4,
+        "fuse::2.0": 3,
+        "sweep::2.0": 3,
+        "attribnoise::2.0": 2,
+        "groupexpression": 2,
+        "normal": 2,
+        "scatter::2.0": 2,
+        "measure::2.0": 2,
+        "tube": 2,
+        "attribtransfer": 2,
+        "connectivity": 2,
+        "block_end": 2,
+        "block_begin": 2,
+        "pack": 2,
+        "attribcreate::2.0": 2,
+        "switchif": 2,
+        "annam::shrub::1.0": 1,
+        "labs::voxelmesh::2.0": 1,
+        "attribblur": 1,
+        "pointsfromvolume": 1,
+        "connectadjacentpieces": 1,
+        "polypath": 1,
+        "attribremap": 1,
+        "sphere": 1,
+        "box": 1,
+        "vdbfrompolygons": 1,
+        "output": 1,
+        "torus": 1,
+        "vdbsmooth": 1,
+        "delete": 1,
+        "ray": 1,
+        "findshortestpath": 1,
+        "grouptransfer": 1,
+        "blast": 1,
+        "polyframe": 1,
+        "add": 1,
+        "sort": 1,
+        "uvtransform::2.0": 1,
+        "attribdelete": 1,
+        "grid": 1,
+        "circle": 1,
+        "resample": 1,
+        "clean": 1
+      },
+      "interface_parameter_count": 54,
+      "interface_examples": [
+        {
+          "name": "shrub_shape",
+          "label": "Shape",
+          "type": "Menu"
+        },
+        {
+          "name": "shrub_size",
+          "label": "Uniform Scale",
+          "type": "Float"
+        },
+        {
+          "name": "shrub_scalex",
+          "label": "Scale",
+          "type": "Float"
+        },
+        {
+          "name": "shrub_scaley",
+          "label": "Scale",
+          "type": "Float"
+        },
+        {
+          "name": "shrub_scalez",
+          "label": "Scale",
+          "type": "Float"
+        },
+        {
+          "name": "torus_rady",
+          "label": "Cross Radius",
+          "type": "Float"
+        },
+        {
+          "name": "crv_shape",
+          "label": "Shape",
+          "type": "Menu"
+        },
+        {
+          "name": "crv_shape_width",
+          "label": "Width",
+          "type": "Float"
+        },
+        {
+          "name": "crv_shape_height",
+          "label": "Height",
+          "type": "Float"
+        },
+        {
+          "name": "crv_height_scale",
+          "label": "Height Scale",
+          "type": "Ramp"
+        },
+        {
+          "name": "crv_height_scale_min",
+          "label": "Height Scale Min",
+          "type": "Float"
+        },
+        {
+          "name": "crv_height_scale_max",
+          "label": "Height Scale Max",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::voxelmesh::2.0"
+      ],
+      "author_notes_bounded_500_chars": [
+        "pre-generated cards",
+        "set min height for the branches",
+        "inner points for the trunk to connect",
+        "set density and surface noise for the branch points",
+        "manual switch between three types of methods to get root point(s)",
+        "offset the end points inwards so that the ends of the connected paths are more perpendicular to the surface"
+      ],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Billboard_Generator.hda",
+      "sha256": "0f8057f56f074cea5156eff3b3236dfcbab2a2155df0f24da8e61967101b8a03",
+      "type": "Billboard_Generator",
+      "label": "Billboard Generator",
+      "category": "Sop",
+      "input_range": [
+        0,
+        0
+      ],
+      "workflows": [
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 63,
+      "node_type_counts_bounded_100": {
+        "polybevel::3.0": 7,
+        "blast": 7,
+        "merge": 4,
+        "xform": 3,
+        "normal": 3,
+        "polyextrude::2.0": 3,
+        "output": 2,
+        "attribcreate::2.0": 2,
+        "divide": 2,
+        "attribwrangle": 2,
+        "switch": 2,
+        "box": 2,
+        "Billboard_Generator": 1,
+        "grid": 1,
+        "sweep::2.0": 1,
+        "convertline": 1,
+        "stash": 1,
+        "grouprange": 1,
+        "labs::uv_unitize::1.0": 1,
+        "uvproject": 1,
+        "copyxform": 1,
+        "carve": 1,
+        "enumerate": 1,
+        "add": 1,
+        "polypath": 1,
+        "labs::thicken::1.0": 1,
+        "null": 1,
+        "copytopoints::2.0": 1,
+        "subnet": 1,
+        "edit": 1,
+        "boolean::2.0": 1,
+        "tube": 1,
+        "resample": 1,
+        "attribtransfer": 1,
+        "labs::instance_attributes::1.0": 1,
+        "polyframe": 1
+      },
+      "interface_parameter_count": 9,
+      "interface_examples": [
+        {
+          "name": "sizey",
+          "label": "Height board",
+          "type": "Float"
+        },
+        {
+          "name": "sizez",
+          "label": "Width board",
+          "type": "Float"
+        },
+        {
+          "name": "scale",
+          "label": "border size",
+          "type": "Float"
+        },
+        {
+          "name": "offset",
+          "label": "Bevel",
+          "type": "Float"
+        },
+        {
+          "name": "rz",
+          "label": "Rotate variation",
+          "type": "Float"
+        },
+        {
+          "name": "input",
+          "label": "Placement",
+          "type": "Int"
+        },
+        {
+          "name": "scale2",
+          "label": "size",
+          "type": "Float"
+        },
+        {
+          "name": "input2",
+          "label": "Placements",
+          "type": "Int"
+        },
+        {
+          "name": "uniformscale",
+          "label": "Uniform Scale",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::instance_attributes::1.0",
+        "labs::thicken::1.0",
+        "labs::uv_unitize::1.0"
+      ],
+      "author_notes_bounded_500_chars": [],
+      "output_node_locations": [
+        "output0",
+        "clamp/output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath",
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/electric_cable_tool_v1.hda",
+      "sha256": "c227f4c3ab5913707a7499d222634ee4cc01544f3d5172ae7c849df1bd975a5b",
+      "type": "electric_cable_tool_v1",
+      "label": "Electric Cable Tool v1",
+      "category": "Sop",
+      "input_range": [
+        2,
+        3
+      ],
+      "workflows": [
+        "curve-instancing",
+        "vellum-settle"
+      ],
+      "node_count_including_expanded_dependencies": 392,
+      "node_type_counts_bounded_100": {
+        "null": 44,
+        "switch": 29,
+        "attribwrangle": 26,
+        "merge": 18,
+        "object_merge": 17,
+        "groupcreate": 15,
+        "copytopoints::2.0": 13,
+        "delete": 12,
+        "polyextrude::2.0": 12,
+        "blast": 11,
+        "add": 11,
+        "grouprange": 11,
+        "xform": 8,
+        "attribcreate::2.0": 7,
+        "resample": 7,
+        "convertline": 6,
+        "output": 6,
+        "clean": 6,
+        "sweep::2.0": 6,
+        "circle": 6,
+        "ray": 5,
+        "uvedit": 5,
+        "subnet": 4,
+        "attribexpression": 4,
+        "attribdelete": 4,
+        "timeshift": 4,
+        "error": 4,
+        "switchif": 4,
+        "polyframe": 4,
+        "fuse::2.0": 4,
+        "edit": 4,
+        "normal": 4,
+        "grid": 3,
+        "groupexpression": 3,
+        "block_begin": 3,
+        "tube": 3,
+        "vellumsolver": 2,
+        "dopimportfield": 2,
+        "connectadjacentpieces": 2,
+        "labs::voxelmesh": 2,
+        "block_end": 2,
+        "smooth::2.0": 2,
+        "carve": 2,
+        "scatter::2.0": 2,
+        "copyxform": 2,
+        "attribpromote": 2,
+        "polyfill": 2,
+        "line": 2,
+        "attribnoise::2.0": 2,
+        "polypath": 2,
+        "measure::2.0": 2,
+        "attribtransfer": 2,
+        "electric_cable_tool_v1": 1,
+        "vellumconstraints": 1,
+        "dopnet": 1,
+        "vellumobject": 1,
+        "gravity": 1,
+        "groundplane": 1,
+        "popwind": 1,
+        "staticobject": 1,
+        "vellumsource": 1,
+        "popwindshadow": 1,
+        "copy": 1,
+        "invoke": 1,
+        "color": 1,
+        "vdbcollidersprocess": 1,
+        "convertvdb": 1,
+        "pointjitter": 1,
+        "groupdelete": 1,
+        "labs::autouv": 1,
+        "reverse": 1,
+        "clip": 1,
+        "groupexpand": 1,
+        "sort": 1,
+        "uvflatten::3.0": 1,
+        "labs::dissolve_flat_edges": 1,
+        "box": 1,
+        "uvquickshade": 1,
+        "facet": 1
+      },
+      "interface_parameter_count": 37,
+      "interface_examples": [
+        {
+          "name": "pole_t",
+          "label": "Electric Poles",
+          "type": "Toggle"
+        },
+        {
+          "name": "input",
+          "label": "Input",
+          "type": "Menu"
+        },
+        {
+          "name": "global_seed",
+          "label": "Global Seed",
+          "type": "Float"
+        },
+        {
+          "name": "cable_len_div",
+          "label": "Cable Length Div",
+          "type": "Float"
+        },
+        {
+          "name": "cable_rad",
+          "label": "Cable Radius",
+          "type": "Float"
+        },
+        {
+          "name": "high_cable_t",
+          "label": "High Cables",
+          "type": "Toggle"
+        },
+        {
+          "name": "mid_cable_t",
+          "label": "Mid Cables",
+          "type": "Toggle"
+        },
+        {
+          "name": "wall_cable_t",
+          "label": "Wall Cables",
+          "type": "Toggle"
+        },
+        {
+          "name": "mid_cable_num",
+          "label": "Fuse Number",
+          "type": "Int"
+        },
+        {
+          "name": "mid_cable_searchradius",
+          "label": "Search Radius",
+          "type": "Float"
+        },
+        {
+          "name": "mid_cable_start",
+          "label": "Start",
+          "type": "Float"
+        },
+        {
+          "name": "mid_cable_end",
+          "label": "End",
+          "type": "Float"
+        },
+        {
+          "name": "frame",
+          "label": "Frame",
+          "type": "Int"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::autouv",
+        "labs::dissolve_flat_edges",
+        "labs::voxelmesh"
+      ],
+      "author_notes_bounded_500_chars": [
+        "Wire POP Forces into force_output to apply per-point forces. Wire Vellum Constraint Properties and Vellum Rest Blend to update constraints dynamically. Wire Vellum Constraints to build new constraints."
+      ],
+      "output_node_locations": [
+        "vellumsolver1/dopnet1/output",
+        "vellumsolver1/output1",
+        "vellumsolver1/output2",
+        "vellumsolver1/output3",
+        "fuse/output0",
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/electric_pole.hda",
+      "sha256": "2cfc3033bb5215876579c110ef97d2ce82815a701614308d71de5ba1c0b3c177",
+      "type": "electric_pole",
+      "label": "Electric Pole Tool",
+      "category": "Sop",
+      "input_range": [
+        0,
+        0
+      ],
+      "workflows": [
+        "modular-generation",
+        "curve-instancing"
+      ],
+      "node_count_including_expanded_dependencies": 500,
+      "node_type_counts_bounded_100": {
+        "polyextrude::2.0": 39,
+        "xform": 38,
+        "merge": 33,
+        "null": 23,
+        "groupcreate": 21,
+        "switch": 21,
+        "blast": 20,
+        "uvedit": 19,
+        "labs::autouv": 17,
+        "attribwrangle": 16,
+        "copyxform": 14,
+        "polybevel::3.0": 13,
+        "switchif": 13,
+        "tube": 11,
+        "sweep::2.0": 11,
+        "output": 10,
+        "resample": 10,
+        "grouprange": 10,
+        "copytopoints::2.0": 10,
+        "edit": 9,
+        "add": 8,
+        "subnet": 7,
+        "uvlayout::3.0": 7,
+        "line": 6,
+        "carve": 6,
+        "attribcreate::2.0": 6,
+        "grid": 5,
+        "delete": 5,
+        "box": 4,
+        "object_merge": 4,
+        "split": 4,
+        "attribexpression": 4,
+        "attribdelete": 4,
+        "timeshift": 4,
+        "reverse": 3,
+        "sort": 3,
+        "smooth::2.0": 3,
+        "labs::automatic_trim_texture": 3,
+        "texture": 3,
+        "attribrandomize": 3,
+        "error": 3,
+        "mirror": 2,
+        "normal": 2,
+        "fuse::2.0": 2,
+        "block_begin": 2,
+        "groupdelete": 2,
+        "polyframe": 2,
+        "uvquickshade": 2,
+        "vellumsolver": 2,
+        "dopimportfield": 2,
+        "divide": 2,
+        "stash": 2,
+        "electric_pole": 1,
+        "distancealonggeometry": 1,
+        "attribtransfer": 1,
+        "block_end": 1,
+        "convertline": 1,
+        "polypath": 1,
+        "vellumconstraints": 1,
+        "dopnet": 1,
+        "vellumobject": 1,
+        "gravity": 1,
+        "groundplane": 1,
+        "popwind": 1,
+        "staticobject": 1,
+        "vellumsource": 1,
+        "popwindshadow": 1,
+        "copy": 1,
+        "invoke": 1,
+        "color": 1,
+        "vdbcollidersprocess": 1,
+        "convertvdb": 1,
+        "circle": 1,
+        "scatter::2.0": 1,
+        "clean": 1,
+        "polyfill": 1,
+        "uvtransform::2.0": 1
+      },
+      "interface_parameter_count": 38,
+      "interface_examples": [
+        {
+          "name": "pole_height",
+          "label": "Pole Height",
+          "type": "Float"
+        },
+        {
+          "name": "pole_rad",
+          "label": "Pole Radius",
+          "type": "Float"
+        },
+        {
+          "name": "pole_cols",
+          "label": "Columns",
+          "type": "Int"
+        },
+        {
+          "name": "crossarm_style",
+          "label": "Style",
+          "type": "Int"
+        },
+        {
+          "name": "crossarm_num",
+          "label": "Number",
+          "type": "Int"
+        },
+        {
+          "name": "crossarm_start",
+          "label": "Start",
+          "type": "Float"
+        },
+        {
+          "name": "crossarm_end",
+          "label": "End",
+          "type": "Float"
+        },
+        {
+          "name": "crossarm_width",
+          "label": "Width",
+          "type": "Float"
+        },
+        {
+          "name": "crossarm_width_seed",
+          "label": "Random Width Seed",
+          "type": "Float"
+        },
+        {
+          "name": "crossarm_rot",
+          "label": "Rotation",
+          "type": "Float"
+        },
+        {
+          "name": "crossarm_rot_seed",
+          "label": "Random Rotation Seed",
+          "type": "Float"
+        },
+        {
+          "name": "cable_mount_num",
+          "label": "Number",
+          "type": "Int"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::automatic_trim_texture",
+        "labs::autouv"
+      ],
+      "author_notes_bounded_500_chars": [
+        "Wire POP Forces into force_output to apply per-point forces. Wire Vellum Constraint Properties and Vellum Rest Blend to update constraints dynamically. Wire Vellum Constraints to build new constraints."
+      ],
+      "output_node_locations": [
+        "Tansformer/output0",
+        "fuse/output0",
+        "vellumsolver2/dopnet1/output",
+        "vellumsolver2/output1",
+        "vellumsolver2/output2",
+        "vellumsolver2/output3",
+        "Lamp/output0",
+        "output0",
+        "Cell_tower/output0",
+        "fuse1/output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": [
+        {
+          "node": "timeshift2",
+          "type": "timeshift",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "file": "otls/sop_titan_simple_crates.1.0.hda",
+      "sha256": "d0765837edcbee40b4c994de9cd141332e3c790d6c4d6680ea033aff9f0e0f8b",
+      "type": "titatn_simple_crates::1.0",
+      "label": "Titan_simple_crates",
+      "category": "Sop",
+      "input_range": [
+        1,
+        1
+      ],
+      "workflows": [
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 103,
+      "node_type_counts_bounded_100": {
+        "block_begin": 12,
+        "bound": 10,
+        "matchsize": 9,
+        "block_end": 9,
+        "convertline": 6,
+        "labs::split_prim_by_normal": 4,
+        "pointjitter": 3,
+        "line": 3,
+        "resample": 3,
+        "xform": 3,
+        "clip::2.0": 2,
+        "labs::automatic_trim_texture": 2,
+        "merge": 2,
+        "attribwrangle": 2,
+        "connectivity": 2,
+        "titatn_simple_crates::1.0": 1,
+        "labs::trim_texture_utility": 1,
+        "labs::visualize_uvs::1.2": 1,
+        "attribadjustcolor": 1,
+        "grid": 1,
+        "uvtransform::2.0": 1,
+        "polyextrude::2.0": 1,
+        "groupcreate": 1,
+        "divide": 1,
+        "labs::autouv": 1,
+        "polybevel::3.0": 1,
+        "labs::physical_ambient_occlusion::1.1": 1,
+        "normal": 1,
+        "sweep::2.0": 1,
+        "uvproject": 1,
+        "assemble": 1,
+        "null": 1,
+        "rop_fbx": 1,
+        "unpack": 1,
+        "blast": 1,
+        "grouptransfer": 1,
+        "blendshapes::2.0": 1,
+        "enumerate": 1,
+        "attribpromote": 1,
+        "labs::random_selection::1.1": 1,
+        "fuse::2.0": 1,
+        "output": 1,
+        "labs::dissolve_flat_edges::1.0": 1,
+        "switchif": 1,
+        "box": 1,
+        "attribcreate::2.0": 1
+      },
+      "interface_parameter_count": 3,
+      "interface_examples": [
+        {
+          "name": "minpadz",
+          "label": "Padding",
+          "type": "Float"
+        },
+        {
+          "name": "execute",
+          "label": "Save to Disk",
+          "type": "Button"
+        },
+        {
+          "name": "sopoutput",
+          "label": "Output File",
+          "type": "String"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::automatic_trim_texture",
+        "labs::autouv",
+        "labs::dissolve_flat_edges::1.0",
+        "labs::physical_ambient_occlusion::1.1",
+        "labs::random_selection::1.1",
+        "labs::split_prim_by_normal",
+        "labs::trim_texture_utility",
+        "labs::visualize_uvs::1.2"
+      ],
+      "author_notes_bounded_500_chars": [],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/sop_tut_pipe_greeble-1.0.hda",
+      "sha256": "0d5aae942c86f5f6a2de18ceff5cbb167455d7f6e131593497533638df2107da",
+      "type": "tut_pipe_greeble::1.0",
+      "label": "TUT_Pipe_Greeble",
+      "category": "Sop",
+      "input_range": [
+        1,
+        1
+      ],
+      "workflows": [
+        "curve-instancing",
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 110,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 16,
+        "blast": 13,
+        "null": 12,
+        "copyxform": 6,
+        "block_begin": 5,
+        "xform": 5,
+        "block_end": 4,
+        "merge": 4,
+        "connectivity": 3,
+        "xformbyattrib": 3,
+        "attribpromote": 3,
+        "invoke": 3,
+        "attribcopy": 2,
+        "connectadjacentpieces": 2,
+        "labs::random_selection::1.1": 2,
+        "add": 2,
+        "copytopoints::2.0": 2,
+        "labs::align_and_distribute::2.0": 2,
+        "tut_pipe_greeble::1.0": 1,
+        "pointsfromvolume": 1,
+        "bound": 1,
+        "sort": 1,
+        "findshortestpath": 1,
+        "fuse::2.0": 1,
+        "groupcreate": 1,
+        "pack": 1,
+        "unpack": 1,
+        "switch": 1,
+        "output": 1,
+        "polywire": 1,
+        "polypath": 1,
+        "polybevel::3.0": 1,
+        "rop_fbx": 1,
+        "compile_end": 1,
+        "compile_begin": 1,
+        "labs::instance_attributes::1.0": 1,
+        "color": 1,
+        "normal": 1,
+        "clean": 1
+      },
+      "interface_parameter_count": 2,
+      "interface_examples": [
+        {
+          "name": "pointseed",
+          "label": "Seed",
+          "type": "Int"
+        },
+        {
+          "name": "particlesep",
+          "label": "Point Separation",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::align_and_distribute::2.0",
+        "labs::instance_attributes::1.0",
+        "labs::random_selection::1.1"
+      ],
+      "author_notes_bounded_500_chars": [
+        "{ +x,-x,+y,-y,+z,-z} 10 00 00",
+        "Try and rotate the input aligned with the grid",
+        "Create grid points and connect them",
+        "Find random lines within the grid",
+        "Copy over the Xfrom data, which holds the transform",
+        "Using this node sets the points back to the input position"
+      ],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath",
+        "unreal_instance"
+      ],
+      "code_parameter_locations": [
+        {
+          "node": "set_instance",
+          "parameter": "snippet"
+        },
+        {
+          "node": "set_instance1",
+          "parameter": "snippet"
+        }
+      ],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Cable_tool.hda",
+      "sha256": "ed9066de8b34b8b594736f08c59ce86eb3fa971c9a59836c2353c800e79a69a5",
+      "type": "Titan::cable::1.0",
+      "label": "Titan Cable",
+      "category": "Sop",
+      "input_range": [
+        1,
+        2
+      ],
+      "workflows": [
+        "curve-instancing"
+      ],
+      "node_count_including_expanded_dependencies": 211,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 45,
+        "groupcreate": 13,
+        "null": 11,
+        "resample": 9,
+        "switch": 9,
+        "merge": 7,
+        "attribdelete": 7,
+        "attribpromote": 6,
+        "polycut": 5,
+        "groupcombine": 5,
+        "ray": 5,
+        "sweep::2.0": 5,
+        "fuse::2.0": 4,
+        "block_begin": 4,
+        "orientalongcurve": 4,
+        "color": 4,
+        "xform": 4,
+        "attribnoise::2.0": 3,
+        "grouppromote": 3,
+        "groupexpand": 3,
+        "groupdelete": 3,
+        "switchif": 3,
+        "grouprange": 2,
+        "attribblur": 2,
+        "polypath": 2,
+        "block_end": 2,
+        "smooth::2.0": 2,
+        "detangle": 2,
+        "distancealonggeometry": 2,
+        "split": 2,
+        "matchsize": 2,
+        "normal": 2,
+        "edgetransport": 2,
+        "xformbyattrib": 2,
+        "grouptransfer": 2,
+        "sort": 2,
+        "blast": 2,
+        "connectivity": 2,
+        "add": 2,
+        "Titan::cable::1.0": 1,
+        "output": 1,
+        "texture": 1,
+        "polyframe": 1,
+        "facet": 1,
+        "copytopoints::2.0": 1,
+        "tube": 1,
+        "circle": 1,
+        "polyextrude::2.0": 1,
+        "reverse": 1,
+        "polybevel::3.0": 1,
+        "attribtransfer": 1,
+        "uvunwrap": 1,
+        "remeshgrid": 1,
+        "polyfill": 1
+      },
+      "interface_parameter_count": 27,
+      "interface_examples": [
+        {
+          "name": "anchor_input_spline_points",
+          "label": "Anchor Spline Points",
+          "type": "Toggle"
+        },
+        {
+          "name": "smooth_input_spline",
+          "label": "Smooth Input Spline",
+          "type": "Toggle"
+        },
+        {
+          "name": "global_scale",
+          "label": "Global Scale",
+          "type": "Float"
+        },
+        {
+          "name": "enable_main_wire",
+          "label": "Enable Main Wire",
+          "type": "Toggle"
+        },
+        {
+          "name": "main_wire_scale",
+          "label": "Main Wire Scale",
+          "type": "Float"
+        },
+        {
+          "name": "sub_wire_count",
+          "label": "Sub Wire Count",
+          "type": "Int"
+        },
+        {
+          "name": "sub_wire_scale_min",
+          "label": "Sub Wire Scale Min",
+          "type": "Float"
+        },
+        {
+          "name": "sub_wire_scale_max",
+          "label": "Sub Wire Scale Max",
+          "type": "Float"
+        },
+        {
+          "name": "sub_wire_anchor_width",
+          "label": "Sub Wire Anchor Width",
+          "type": "Float"
+        },
+        {
+          "name": "sub_wire_non_anchored_twist",
+          "label": "Sub Wire Non Anchored Twist",
+          "type": "Float"
+        },
+        {
+          "name": "sub_wire_anchored_twist",
+          "label": "Sub Wire Anchored Twist",
+          "type": "Float"
+        },
+        {
+          "name": "enable_coiled_cable",
+          "label": "Enable Coiled Cable",
+          "type": "Toggle"
+        },
+        {
+          "name": "global_gravity",
+          "label": "Global Gravity",
+          "type": "Float"
+        },
+        {
+          "name": "sub_wire_gravity",
+          "label": "Sub Wire Gravity",
+          "type": "Float"
+        },
+        {
+          "name": "collision_iterations",
+          "label": "Collision Iterations",
+          "type": "Int"
+        },
+        {
+          "name": "output_uvs",
+          "label": "Output UVs",
+          "type": "Toggle"
+        },
+        {
+          "name": "unreal_material",
+          "label": "Unreal Material",
+          "type": "String"
+        }
+      ],
+      "labs_node_types_observed": [],
+      "author_notes_bounded_500_chars": [
+        "This is used, as the default convert line node produces warnings that are visible the Houdini Engine cook log. There are no primitive or vertex attributes that have to be preserved. If required, use convertline.",
+        "Collision is done a post processing step. The benefit of this is that it is performant and consistent, but you should keep the following in mind: Only parts of the wires (with gravity already applied) that are inside of collision geometry will adapt to the collision meshes. This means that collision meshes should be as thick as the amount of gravity that is applied in the worst case. Consider using proxy collision shapes that are editor-only inside Unreal. If collision with thin objects is requi",
+        "We need to do this group transfer, as getting the anchors group before the resample results in the resample adding more points to the group than we want.",
+        "We want to guarantee that the edge is at least one segment wide, in order to resample it for extra resolution. This extra resolution helps with making sure that wires on the anchors are tied together well.",
+        "Sweeping in two orientations around the source makes the sub wires bundle together."
+      ],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material",
+        "unreal_nanite_enabled"
+      ],
+      "code_parameter_locations": [
+        {
+          "node": "output_attribs",
+          "parameter": "snippet"
+        }
+      ],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Cloth_tool.hda",
+      "sha256": "8104e81fd1d55c9619bce2b97443be6e72133074374ad6b4ebc99f36fc34bc3b",
+      "type": "Titan_Cloth_tool",
+      "label": "Titan Cloth tool",
+      "category": "Sop",
+      "input_range": [
+        0,
+        2
+      ],
+      "workflows": [
+        "vellum-settle"
+      ],
+      "node_count_including_expanded_dependencies": 93,
+      "node_type_counts_bounded_100": {
+        "switch": 15,
+        "null": 8,
+        "merge": 7,
+        "output": 5,
+        "switchif": 5,
+        "attribexpression": 4,
+        "attribdelete": 4,
+        "timeshift": 4,
+        "attribwrangle": 3,
+        "error": 3,
+        "vellumsolver": 2,
+        "subnet": 2,
+        "dopimportfield": 2,
+        "grid": 2,
+        "blast": 2,
+        "groupcreate": 2,
+        "Titan_Cloth_tool": 1,
+        "vellumconstraints": 1,
+        "dopnet": 1,
+        "vellumobject": 1,
+        "gravity": 1,
+        "groundplane": 1,
+        "popwind": 1,
+        "staticobject": 1,
+        "vellumsource": 1,
+        "popwindshadow": 1,
+        "copy": 1,
+        "invoke": 1,
+        "color": 1,
+        "vdbcollidersprocess": 1,
+        "convertvdb": 1,
+        "vellumpostprocess": 1,
+        "remesh::2.0": 1,
+        "sphere": 1,
+        "uvproject": 1,
+        "uvquickshade": 1,
+        "normal": 1,
+        "uvtransform::2.0": 1,
+        "attribcreate::2.0": 1
+      },
+      "interface_parameter_count": 19,
+      "interface_examples": [
+        {
+          "name": "resimulate",
+          "label": "Reset Simulation",
+          "type": "Button"
+        },
+        {
+          "name": "targetsize",
+          "label": "Target Size",
+          "type": "Float"
+        },
+        {
+          "name": "depth",
+          "label": "Post subd",
+          "type": "Int"
+        },
+        {
+          "name": "spatialblur",
+          "label": "Spatial Blur",
+          "type": "Float"
+        },
+        {
+          "name": "cuspangle",
+          "label": "Cusp Angle",
+          "type": "Float"
+        },
+        {
+          "name": "initbbox",
+          "label": "Auto fit",
+          "type": "Button"
+        },
+        {
+          "name": "tx",
+          "label": "Translate",
+          "type": "Float"
+        },
+        {
+          "name": "ty",
+          "label": "Translate",
+          "type": "Float"
+        },
+        {
+          "name": "tz",
+          "label": "Translate",
+          "type": "Float"
+        },
+        {
+          "name": "rx",
+          "label": "Rotate",
+          "type": "Float"
+        },
+        {
+          "name": "ry",
+          "label": "Rotate",
+          "type": "Float"
+        },
+        {
+          "name": "rz",
+          "label": "Rotate",
+          "type": "Float"
+        },
+        {
+          "name": "frame",
+          "label": "Frame",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [],
+      "author_notes_bounded_500_chars": [
+        "Wire POP Forces into force_output to apply per-point forces. Wire Vellum Constraint Properties and Vellum Rest Blend to update constraints dynamically. Wire Vellum Constraints to build new constraints."
+      ],
+      "output_node_locations": [
+        "vellumsolver1/dopnet1/output",
+        "vellumsolver1/output1",
+        "vellumsolver1/output2",
+        "vellumsolver1/output3",
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Constructions.hda",
+      "sha256": "38161624e686f4b105013da781e99dd4ec5c01ba3d9c3f6a267a41be645155bf",
+      "type": "Titan_Constructions",
+      "label": "Titan Constructions",
+      "category": "Sop",
+      "input_range": [
+        1,
+        2
+      ],
+      "workflows": [
+        "modular-generation",
+        "curve-instancing"
+      ],
+      "node_count_including_expanded_dependencies": 82,
+      "node_type_counts_bounded_100": {
+        "box": 8,
+        "convertline": 5,
+        "null": 5,
+        "resample": 5,
+        "block_end": 3,
+        "block_begin": 3,
+        "merge": 3,
+        "output": 3,
+        "attribwrangle": 3,
+        "labs::edgegroup_to_curve::1.0": 2,
+        "xformbyattrib": 2,
+        "attribcopy": 2,
+        "xform": 2,
+        "boolean::2.0": 2,
+        "subnet": 2,
+        "labs::split_prim_by_normal": 2,
+        "divide": 2,
+        "facet": 2,
+        "switchif": 2,
+        "polyframe": 2,
+        "attribpromote": 2,
+        "labs::instance_attributes::1.0": 2,
+        "Titan_Constructions": 1,
+        "chain": 1,
+        "connectivity": 1,
+        "bound": 1,
+        "matchsize": 1,
+        "mirror": 1,
+        "copyxform": 1,
+        "groupcreate": 1,
+        "pack": 1,
+        "labs::boolean_curve::1.0": 1,
+        "fuse::2.0": 1,
+        "labs::delete_small_parts": 1,
+        "splitpoints": 1,
+        "polyextrude::2.0": 1,
+        "labs::dissolve_flat_edges::1.0": 1,
+        "attribtransfer": 1,
+        "normal": 1,
+        "switch": 1
+      },
+      "interface_parameter_count": 6,
+      "interface_examples": [
+        {
+          "name": "input",
+          "label": "Only place on border",
+          "type": "Toggle"
+        },
+        {
+          "name": "length",
+          "label": "Spacing",
+          "type": "Float"
+        },
+        {
+          "name": "height",
+          "label": "height scale",
+          "type": "Float"
+        },
+        {
+          "name": "Add_sup",
+          "label": "Add Support",
+          "type": "Int"
+        },
+        {
+          "name": "strvalue0",
+          "label": "Base Model",
+          "type": "String"
+        },
+        {
+          "name": "strvalue1",
+          "label": "Wall Support",
+          "type": "String"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::boolean_curve::1.0",
+        "labs::delete_small_parts",
+        "labs::dissolve_flat_edges::1.0",
+        "labs::edgegroup_to_curve::1.0",
+        "labs::instance_attributes::1.0",
+        "labs::split_prim_by_normal"
+      ],
+      "author_notes_bounded_500_chars": [],
+      "output_node_locations": [
+        "modular_beam/output0",
+        "output0",
+        "create_instances/output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Fence_Tool.hda",
+      "sha256": "fd456bdb28de9fd4b507c035d86ff4e7414e1194c3aa47cc3b9424fc39d93b90",
+      "type": "Titan_Fence_Tool",
+      "label": "Titan Fence Tool",
+      "category": "Sop",
+      "input_range": [
+        1,
+        1
+      ],
+      "workflows": [
+        "curve-instancing"
+      ],
+      "node_count_including_expanded_dependencies": 80,
+      "node_type_counts_bounded_100": {
+        "resample": 6,
+        "switch": 6,
+        "output": 4,
+        "null": 4,
+        "xform": 4,
+        "convertline": 3,
+        "attribwrangle": 3,
+        "fuse::2.0": 3,
+        "normal": 3,
+        "orientalongcurve": 3,
+        "blast": 3,
+        "splitpoints": 2,
+        "attribtransfer": 2,
+        "facet": 2,
+        "groupcreate": 2,
+        "clean": 2,
+        "merge": 2,
+        "subnet": 2,
+        "chain": 2,
+        "attribcreate::2.0": 2,
+        "Titan_Fence_Tool": 1,
+        "labs::edgegroup_to_curve::1.0": 1,
+        "primitive": 1,
+        "attribpromote": 1,
+        "polyextrude::2.0": 1,
+        "labs::delete_small_parts": 1,
+        "ray": 1,
+        "polybevel::3.0": 1,
+        "groupexpand": 1,
+        "grouppromote": 1,
+        "groupcombine": 1,
+        "polypath": 1,
+        "reverse": 1,
+        "stash": 1,
+        "divide": 1,
+        "distancealonggeometry": 1,
+        "connectivity": 1,
+        "block_end": 1,
+        "block_begin": 1,
+        "labs::instance_attributes::1.0": 1
+      },
+      "interface_parameter_count": 14,
+      "interface_examples": [
+        {
+          "name": "length",
+          "label": "Spacing fences",
+          "type": "Float"
+        },
+        {
+          "name": "multi_scale0",
+          "label": "Overall scale",
+          "type": "Float"
+        },
+        {
+          "name": "hieght",
+          "label": "Height",
+          "type": "Float"
+        },
+        {
+          "name": "upvectortype",
+          "label": "Target Up Vector",
+          "type": "Menu"
+        },
+        {
+          "name": "input4",
+          "label": "Flip models",
+          "type": "Toggle"
+        },
+        {
+          "name": "input",
+          "label": "Force rotation",
+          "type": "Toggle"
+        },
+        {
+          "name": "input2",
+          "label": "Enable",
+          "type": "Toggle"
+        },
+        {
+          "name": "offset",
+          "label": "Amount bevel",
+          "type": "Float"
+        },
+        {
+          "name": "input3",
+          "label": "Reverse model direction",
+          "type": "Toggle"
+        },
+        {
+          "name": "seed",
+          "label": "Seed",
+          "type": "Float"
+        },
+        {
+          "name": "inst_value0",
+          "label": "AssetPath 0",
+          "type": "String"
+        },
+        {
+          "name": "invalue0",
+          "label": "Value 0",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::delete_small_parts",
+        "labs::edgegroup_to_curve::1.0",
+        "labs::instance_attributes::1.0"
+      ],
+      "author_notes_bounded_500_chars": [],
+      "output_node_locations": [
+        "output0",
+        "adding_corner/output0",
+        "adding_corner/output1",
+        "Model_corner/output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath",
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Pipes_Curves.hda",
+      "sha256": "998c945987089aeebe247cfa05b91e06360ef26f9626a89a59e1dc9126eb95fc",
+      "type": "Titan_Pipes_Curves",
+      "label": "Titan Pipes Curves",
+      "category": "Sop",
+      "input_range": [
+        0,
+        1
+      ],
+      "workflows": [
+        "curve-instancing"
+      ],
+      "node_count_including_expanded_dependencies": 131,
+      "node_type_counts_bounded_100": {
+        "parameter": 27,
+        "uvtransform::2.0": 7,
+        "block_begin": 7,
+        "switch": 7,
+        "merge": 5,
+        "attribwrangle": 4,
+        "polybevel::3.0": 3,
+        "sweep::2.0": 3,
+        "block_end": 3,
+        "tube": 3,
+        "uvflatten::3.0": 3,
+        "groupcreate": 3,
+        "suboutput": 3,
+        "subinput": 3,
+        "curve": 2,
+        "normal": 2,
+        "null": 2,
+        "attribdelete": 2,
+        "blast": 2,
+        "polyextrude::2.0": 2,
+        "resample": 2,
+        "labs::random_selection::1.1": 2,
+        "findshortestpath": 2,
+        "attribtransfer": 2,
+        "Titan_Pipes_Curves": 1,
+        "output": 1,
+        "connectivity": 1,
+        "attribcreate::2.0": 1,
+        "grouprange": 1,
+        "carve": 1,
+        "polyframe": 1,
+        "copytopoints::2.0": 1,
+        "xform": 1,
+        "copyxform": 1,
+        "torus": 1,
+        "mirror": 1,
+        "labs::instance_attributes::1.0": 1,
+        "orientalongcurve": 1,
+        "attribnoise::2.0": 1,
+        "grouptransfer": 1,
+        "attribvop": 1,
+        "geometryvopglobal::2.0": 1,
+        "geometryvopoutput": 1,
+        "efit::2.0": 1,
+        "importpoint": 1,
+        "snippet": 1,
+        "constant": 1,
+        "attribrandomize": 1,
+        "attribpromote": 1,
+        "smooth::2.0": 1,
+        "convertline": 1,
+        "uvquickshade": 1,
+        "uvedit": 1,
+        "peak": 1
+      },
+      "interface_parameter_count": 8,
+      "interface_examples": [
+        {
+          "name": "radius",
+          "label": "Main Radius",
+          "type": "Float"
+        },
+        {
+          "name": "cols",
+          "label": "Divisions",
+          "type": "Int"
+        },
+        {
+          "name": "length",
+          "label": "Pipe segement distance",
+          "type": "Float"
+        },
+        {
+          "name": "radius2",
+          "label": "Radius",
+          "type": "Float"
+        },
+        {
+          "name": "iterations",
+          "label": "Sub pipe iteration",
+          "type": "Int"
+        },
+        {
+          "name": "iterations2",
+          "label": "Sub pipe multiplier",
+          "type": "Int"
+        },
+        {
+          "name": "string1",
+          "label": "material",
+          "type": "String"
+        },
+        {
+          "name": "input",
+          "label": "Overwrite to input",
+          "type": "Toggle"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::instance_attributes::1.0",
+        "labs::random_selection::1.1"
+      ],
+      "author_notes_bounded_500_chars": [
+        "/Script/Engine.Material'/Game/Titan/Material/Uniques/Pipes_Trim.Pipes_Trim'"
+      ],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath",
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Platforms.hda",
+      "sha256": "3c00b49b0cbda15706b47b2a4136088ad997afa40ee098f5d0d136f8699e3785",
+      "type": "Titan_Platforms",
+      "label": "Titan Platforms",
+      "category": "Sop",
+      "input_range": [
+        1,
+        2
+      ],
+      "workflows": [
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 173,
+      "node_type_counts_bounded_100": {
+        "switch": 13,
+        "null": 9,
+        "groupcreate": 7,
+        "labs::instance_attributes::1.0": 7,
+        "merge": 6,
+        "xform": 6,
+        "color": 5,
+        "normal": 5,
+        "fuse::2.0": 5,
+        "output": 5,
+        "divide": 5,
+        "attribcopy": 5,
+        "boolean::2.0": 4,
+        "attribpromote": 4,
+        "polyextrude::2.0": 4,
+        "sphere": 3,
+        "subnet": 3,
+        "convertline": 3,
+        "resample": 3,
+        "split": 3,
+        "attribcreate::2.0": 3,
+        "bound": 3,
+        "xformbyattrib": 3,
+        "labs::extract_silhouette::1.0": 2,
+        "block_end": 2,
+        "block_begin": 2,
+        "matchsize": 2,
+        "polybevel::3.0": 2,
+        "grouptransfer": 2,
+        "copytopoints::2.0": 2,
+        "polypath": 2,
+        "attribwrangle": 2,
+        "grouppromote": 2,
+        "splitpoints": 2,
+        "facet": 2,
+        "labs::edgegroup_to_curve::1.0": 2,
+        "uvflatten::3.0": 2,
+        "uvtransform::2.0": 2,
+        "clean": 2,
+        "Titan_Platforms": 1,
+        "connectivity": 1,
+        "uvproject": 1,
+        "reverse": 1,
+        "primitive": 1,
+        "attribtransfer": 1,
+        "labs::boolean_curve::1.0": 1,
+        "labs::delete_small_parts": 1,
+        "ray": 1,
+        "object_merge": 1,
+        "peak": 1,
+        "polyexpand2d": 1,
+        "uvlayout::3.0": 1,
+        "groupcombine": 1,
+        "sweep::2.0": 1,
+        "polywire": 1,
+        "grid": 1,
+        "labs::dissolve_flat_edges::1.0": 1,
+        "voronoifracture::2.0": 1,
+        "scatter::2.0": 1,
+        "labs::measure_curvature::3.0": 1,
+        "measure::2.0": 1,
+        "blast": 1,
+        "attribdelete": 1,
+        "labs::split_prim_by_normal": 1,
+        "box": 1,
+        "attribute": 1
+      },
+      "interface_parameter_count": 16,
+      "interface_examples": [
+        {
+          "name": "input3",
+          "label": "style",
+          "type": "Int"
+        },
+        {
+          "name": "scalez",
+          "label": "Size",
+          "type": "Float"
+        },
+        {
+          "name": "input",
+          "label": "enable fences",
+          "type": "Toggle"
+        },
+        {
+          "name": "length",
+          "label": "Spacing fence",
+          "type": "Float"
+        },
+        {
+          "name": "hieght",
+          "label": "Height fence",
+          "type": "Float"
+        },
+        {
+          "name": "input4",
+          "label": "Style",
+          "type": "Int"
+        },
+        {
+          "name": "sx",
+          "label": "UV scale",
+          "type": "Float"
+        },
+        {
+          "name": "input6",
+          "label": "Add divisions",
+          "type": "Toggle"
+        },
+        {
+          "name": "sizex",
+          "label": "Size",
+          "type": "Float"
+        },
+        {
+          "name": "removeoutsidesilhouette",
+          "label": "Remove insides",
+          "type": "Toggle"
+        },
+        {
+          "name": "objpath1",
+          "label": "Walls",
+          "type": "String"
+        },
+        {
+          "name": "input2",
+          "label": "Boolean in floor",
+          "type": "Toggle"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::boolean_curve::1.0",
+        "labs::delete_small_parts",
+        "labs::dissolve_flat_edges::1.0",
+        "labs::edgegroup_to_curve::1.0",
+        "labs::extract_silhouette::1.0",
+        "labs::instance_attributes::1.0",
+        "labs::measure_curvature::3.0",
+        "labs::split_prim_by_normal"
+      ],
+      "author_notes_bounded_500_chars": [],
+      "output_node_locations": [
+        "output0",
+        "Fences_and_border/output0",
+        "Clean_up_shape/output0",
+        "Corner/Outer_corner",
+        "Corner/Inner_Corner"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath",
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_Scaffold.hda",
+      "sha256": "cc4470cccb371b11596cb7d089b973f36055779e769068380d4d402febf4df0b",
+      "type": "Titan::scaffold::1.0",
+      "label": "Titan Scaffold",
+      "category": "Sop",
+      "input_range": [
+        1,
+        1
+      ],
+      "workflows": [
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 117,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 33,
+        "blast": 12,
+        "groupcreate": 10,
+        "null": 8,
+        "block_begin": 5,
+        "merge": 4,
+        "attribpromote": 3,
+        "xformbyattrib": 3,
+        "attribdelete": 3,
+        "normal": 3,
+        "boolean::2.0": 2,
+        "connectivity": 2,
+        "switch": 2,
+        "block_end": 2,
+        "fuse::2.0": 2,
+        "polydoctor": 2,
+        "sort": 2,
+        "convertline": 2,
+        "split": 2,
+        "extractcentroid": 2,
+        "Titan::scaffold::1.0": 1,
+        "output": 1,
+        "bound": 1,
+        "copytopoints::2.0": 1,
+        "box": 1,
+        "attribcopy": 1,
+        "object_merge": 1,
+        "groupcombine": 1,
+        "connectadjacentpieces": 1,
+        "findshortestpath": 1,
+        "polypath": 1,
+        "polyextrude::2.0": 1,
+        "labs::multi_bounding_box": 1
+      },
+      "interface_parameter_count": 5,
+      "interface_examples": [
+        {
+          "name": "scaffold_datatable",
+          "label": "Scaffold Datatable",
+          "type": "String"
+        },
+        {
+          "name": "merge_inputs",
+          "label": "Merge Inputs",
+          "type": "Toggle"
+        },
+        {
+          "name": "resolve_overlap",
+          "label": "Resolve Overlap",
+          "type": "Toggle"
+        },
+        {
+          "name": "select_datatable_entry",
+          "label": "Select Datatable Entry",
+          "type": "Int"
+        },
+        {
+          "name": "variations_seed",
+          "label": "Variations Seed",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::multi_bounding_box"
+      ],
+      "author_notes_bounded_500_chars": [
+        "We collect the box representation, so that we can resolve collisions between intersecting input boxes. This is mostly relevant when merge_inputs is False.",
+        "Find the path between the bottom and the top of the scaffold and identify which of the three stairs types to use.",
+        "Similar functionality may be found in labs::multi_bounding_box, but the logic here is closer to the minimum number of computations for this simple case. Here is benchmark result with a very large input shape: round_to_cell_size until centroids: 0.011 seconds. Node graph on the right using multi_bounding_box: 29.273 seconds.",
+        "We want to turn our input shape (which may be multiple if merge_inputs is True) into a representation of boxes of the size specified in the input datatable. This will allow us to easily create instances for each face of these boxes. To do this, we first create a 3D grid of points within the entire input's bounds, with spacing defined by the datatable, and then remove points (i.e. cells) that are not within the input shape. We can then copy boxes onto these points to get those faces which can be ",
+        "Because we have created and oriented our bounding box consistently above, we know for certain which side of the box has the smallest surface area. Because the divide operation is more expensive than creating points in the centroids wrangle, we initially isolate only the side whose edges sit on the z-axis (always the smallest prim thanks to our efforts in the xform wrangle).",
+        "Note: for large inputs, this is really not the bottleneck anyway."
+      ],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_data_table_10_Module_Front_Middle_Closed",
+        "unreal_data_table_11_Module_Front_Top_Closed",
+        "unreal_data_table_1_Cell_Width",
+        "unreal_data_table_2_Cell_Height",
+        "unreal_data_table_3_Cell_Depth",
+        "unreal_data_table_4_Module_Side_Ground_Open",
+        "unreal_data_table_5_Module_Side_Middle_Open",
+        "unreal_data_table_6_Module_Side_Middle_Closed",
+        "unreal_data_table_7_Module_Side_Top_Open",
+        "unreal_data_table_8_Module_Side_Top_Closed",
+        "unreal_data_table_9_Module_Front_Ground_Closed",
+        "unreal_instance"
+      ],
+      "code_parameter_locations": [
+        {
+          "node": "column_dict",
+          "parameter": "snippet"
+        },
+        {
+          "node": "get_xform_and_iteration",
+          "parameter": "snippet"
+        },
+        {
+          "node": "point_from_prim_template",
+          "parameter": "snippet"
+        },
+        {
+          "node": "unreal_instance",
+          "parameter": "snippet"
+        }
+      ],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_SkyTrain.hda",
+      "sha256": "e84fbe90de4a4beefeae30a26941964d7ae3d92c99db0a54b3736a1ad1b4e50c",
+      "type": "Titan_SkyTrain",
+      "label": "Titan SkyTrain",
+      "category": "Sop",
+      "input_range": [
+        0,
+        0
+      ],
+      "workflows": [
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 47,
+      "node_type_counts_bounded_100": {
+        "block_begin": 7,
+        "polyextrude::2.0": 6,
+        "box": 5,
+        "attribcreate::2.0": 5,
+        "merge": 4,
+        "block_end": 3,
+        "xform": 3,
+        "color": 2,
+        "attribwrangle": 2,
+        "edit": 2,
+        "Titan_SkyTrain": 1,
+        "connectivity": 1,
+        "add": 1,
+        "blast": 1,
+        "polybevel::3.0": 1,
+        "normal": 1,
+        "switch": 1,
+        "output": 1
+      },
+      "interface_parameter_count": 1,
+      "interface_examples": [
+        {
+          "name": "offset",
+          "label": "offset wagons",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [],
+      "author_notes_bounded_500_chars": [
+        "Random seeds random button"
+      ],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Titan_StackingTool.hda",
+      "sha256": "1bc4b6c278d913327df213dbfdb82f0b3eee8bd26a2b92384d6ab5142a9b74d6",
+      "type": "stackingTool",
+      "label": "StackingTool",
+      "category": "Sop",
+      "input_range": [
+        1,
+        1
+      ],
+      "workflows": [
+        "rbd-destruction",
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 872,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 134,
+        "switch": 89,
+        "null": 66,
+        "attribpromote": 37,
+        "merge": 36,
+        "attribdelete": 27,
+        "parameter": 27,
+        "switchif": 25,
+        "object_merge": 25,
+        "dopimport": 21,
+        "compile_begin": 21,
+        "output": 19,
+        "blast": 17,
+        "timeshift": 16,
+        "xform": 15,
+        "block_begin": 12,
+        "split": 12,
+        "groupcreate": 11,
+        "subnet": 11,
+        "compile_end": 11,
+        "color": 9,
+        "connectivity": 9,
+        "attribcopy": 9,
+        "assemble": 9,
+        "copytopoints::2.0": 8,
+        "groupdelete": 8,
+        "unpack": 8,
+        "enablesolver": 8,
+        "block_end": 7,
+        "bind": 6,
+        "attribute": 5,
+        "sopsolver::2.0": 5,
+        "attribcreate::2.0": 5,
+        "sphere": 4,
+        "matchsize": 4,
+        "geometrywrangle": 4,
+        "sopgeo": 4,
+        "splitpoints": 4,
+        "enumerate": 4,
+        "normal": 3,
+        "attribrandomize": 3,
+        "attribtransfer": 3,
+        "pack": 3,
+        "dopnet": 3,
+        "dopimport::2.0": 3,
+        "xformpieces": 3,
+        "sort": 3,
+        "add": 3,
+        "ray": 2,
+        "uvlayout::3.0": 2,
+        "remesh::2.0": 2,
+        "grouppromote": 2,
+        "stash": 2,
+        "box": 2,
+        "attribcast": 2,
+        "rbdpackedobject": 2,
+        "glueconrel": 2,
+        "hardconrel": 2,
+        "attribvop": 2,
+        "snippet": 2,
+        "switchsolver": 2,
+        "switchvalue": 2,
+        "pointdeform": 2,
+        "suboutput": 2,
+        "subinput": 2,
+        "python": 2,
+        "grid": 2,
+        "convertline": 2,
+        "heightfield_xform": 2,
+        "solver": 2,
+        "emptyobject": 2,
+        "sopsolver": 2,
+        "invoke": 2,
+        "stackingTool": 1,
+        "scatteralign": 1,
+        "measure::2.0": 1,
+        "relax": 1,
+        "circle": 1,
+        "attribnoise": 1,
+        "scatter::2.0": 1,
+        "attribinterpolate": 1,
+        "groupcombine": 1,
+        "clusterpoints": 1,
+        "reverse": 1,
+        "partition": 1,
+        "name": 1,
+        "shrinkwrap::2.0": 1,
+        "delete": 1,
+        "bound": 1,
+        "testgeometry_pighead": 1,
+        "rbdbulletsolver": 1,
+        "groundplane": 1,
+        "gravity": 1,
+        "rigidbodysolver": 1,
+        "constraintnetwork": 1,
+        "bulletsoftconrel": 1,
+        "conetwistconrel": 1,
+        "springconrel": 1,
+        "sliderconrel": 1,
+        "impactanalysis": 1
+      },
+      "interface_parameter_count": 19,
+      "interface_examples": [
+        {
+          "name": "useDataTab",
+          "label": "Use Data Table?",
+          "type": "Toggle"
+        },
+        {
+          "name": "objpathObject",
+          "label": "Object Path",
+          "type": "String"
+        },
+        {
+          "name": "objpathData",
+          "label": "Data Table IN",
+          "type": "String"
+        },
+        {
+          "name": "orientedbbox",
+          "label": "Oriented Bounding Box",
+          "type": "Toggle"
+        },
+        {
+          "name": "OverallRot",
+          "label": "Overall Rotation",
+          "type": "Float"
+        },
+        {
+          "name": "perprotrandmin",
+          "label": "Min Angle Rotation",
+          "type": "Float"
+        },
+        {
+          "name": "perprotrandmax",
+          "label": "Max Angle Rotation",
+          "type": "Float"
+        },
+        {
+          "name": "perprandstep",
+          "label": "Rotation Step Size",
+          "type": "Float"
+        },
+        {
+          "name": "minscale",
+          "label": "Min Scale",
+          "type": "Float"
+        },
+        {
+          "name": "maxscale",
+          "label": "Max Scale",
+          "type": "Float"
+        },
+        {
+          "name": "scaleStep",
+          "label": "Scale Stepping Size",
+          "type": "Float"
+        },
+        {
+          "name": "iterations",
+          "label": "Max height",
+          "type": "Int"
+        },
+        {
+          "name": "input",
+          "label": "enable sim",
+          "type": "Toggle"
+        },
+        {
+          "name": "frame",
+          "label": "Frame",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [],
+      "author_notes_bounded_500_chars": [
+        "Maybe not show in tutorial could use some more work for instancing",
+        "When mixing packed and unpacked input geo, the names might exist on points and prims with some ending up as empty strings - this trips up the transform pieces SOP. We transfer name attribs over when the name is an empty string.",
+        "Wire POP Forces into force_output to apply per-point forces. If scaling the sim, remember to apply scale accordingly.",
+        "Default constraints supported by the rbdconstraintproperties SOP",
+        "Additional constraints supported by the Bullet Solver",
+        "Create rbd pin target objects"
+      ],
+      "output_node_locations": [
+        "scatteralign2/output1",
+        "output0",
+        "rbdbulletsolver1/dopnet/output",
+        "rbdbulletsolver1/dopnet/Constraint_Solver/output0",
+        "rbdbulletsolver1/dopnet/emission/output0",
+        "rbdbulletsolver1/dopnet/Constraint_Update_Solver/output0",
+        "rbdbulletsolver1/dopnet/emission_geos/OUT",
+        "rbdbulletsolver1/GEOMETRY",
+        "rbdbulletsolver1/PROXY_GEOMETRY",
+        "rbdbulletsolver1/CONSTRAINT_GEOMETRY",
+        "rbdbulletsolver1/SIM_POINTS",
+        "rbdbulletsolver1/repack/output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "unreal_data_table_1_Asset_path",
+        "unreal_data_table_2_Width",
+        "unreal_data_table_3_Length",
+        "unreal_data_table_4_Height",
+        "unreal_instance"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": [
+        {
+          "node": "Data_table_example",
+          "type": "stash",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "file": "otls/Titan_Train_rails.hda",
+      "sha256": "2efc45ef7f6a12aee5657267051810a526da480ba1df785b7c513115b3a3efef",
+      "type": "Titan_Train_rails",
+      "label": "Titan Train rails",
+      "category": "Sop",
+      "input_range": [
+        0,
+        0
+      ],
+      "workflows": [
+        "curve-instancing"
+      ],
+      "node_count_including_expanded_dependencies": 67,
+      "node_type_counts_bounded_100": {
+        "resample": 5,
+        "xform": 5,
+        "attribwrangle": 5,
+        "convertline": 4,
+        "labs::instance_attributes::1.0": 4,
+        "blast": 3,
+        "polypath": 3,
+        "primitive": 3,
+        "splitpoints": 3,
+        "attribpromote": 3,
+        "fuse::2.0": 3,
+        "copytopoints::2.0": 3,
+        "polyframe": 3,
+        "matchsize": 3,
+        "merge": 3,
+        "facet": 2,
+        "clip": 2,
+        "Titan_Train_rails": 1,
+        "curve": 1,
+        "orientalongcurve": 1,
+        "attribtransfer": 1,
+        "output": 1,
+        "file": 1,
+        "labs::symmetrize": 1,
+        "polyreduce::2.0": 1,
+        "sweep::2.0": 1,
+        "switch": 1
+      },
+      "interface_parameter_count": 12,
+      "interface_examples": [
+        {
+          "name": "treatpolysas",
+          "label": "Curving mode",
+          "type": "Menu"
+        },
+        {
+          "name": "ncy",
+          "label": "Amount",
+          "type": "Int"
+        },
+        {
+          "name": "tx",
+          "label": "space",
+          "type": "Float"
+        },
+        {
+          "name": "scale_h",
+          "label": "scale height",
+          "type": "Float"
+        },
+        {
+          "name": "scale_l",
+          "label": "scale lenght",
+          "type": "Float"
+        },
+        {
+          "name": "scale_w",
+          "label": "scale width",
+          "type": "Float"
+        },
+        {
+          "name": "strvalue1",
+          "label": "Large",
+          "type": "String"
+        },
+        {
+          "name": "strvalue2",
+          "label": "Meduim",
+          "type": "String"
+        },
+        {
+          "name": "strvalue3",
+          "label": "Small",
+          "type": "String"
+        },
+        {
+          "name": "strvalue0",
+          "label": "Model",
+          "type": "String"
+        },
+        {
+          "name": "ty",
+          "label": "Move up/down",
+          "type": "Float"
+        },
+        {
+          "name": "length",
+          "label": "Spacing",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::instance_attributes::1.0",
+        "labs::symmetrize"
+      ],
+      "author_notes_bounded_500_chars": [],
+      "output_node_locations": [
+        "output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": []
+    },
+    {
+      "file": "otls/Tutorial_Building_Generator.hda",
+      "sha256": "0a5829f0873268ef8c6098b0aef82eb7e2a2fbda65aee821e0a45c62701fec3e",
+      "type": "Tutorial_Building_Generator",
+      "label": "Tutorial Building Generator",
+      "category": "Sop",
+      "input_range": [
+        1,
+        1
+      ],
+      "workflows": [
+        "modular-generation"
+      ],
+      "node_count_including_expanded_dependencies": 355,
+      "node_type_counts_bounded_100": {
+        "attribwrangle": 34,
+        "merge": 32,
+        "attribcreate::2.0": 32,
+        "switch": 27,
+        "null": 23,
+        "name": 12,
+        "attribdelete": 12,
+        "tube": 12,
+        "groupcreate": 10,
+        "grid": 10,
+        "output": 9,
+        "attribpromote": 9,
+        "color": 9,
+        "xform": 8,
+        "labs::building_generator_utility::2.0": 6,
+        "box": 6,
+        "visibility": 6,
+        "visualize": 6,
+        "error": 6,
+        "matchsize": 5,
+        "block_end": 5,
+        "block_begin": 5,
+        "blast": 5,
+        "normal": 5,
+        "labs::instance_attributes::1.0": 5,
+        "clean": 4,
+        "stash": 4,
+        "uvtransform::2.0": 3,
+        "labs::dissolve_flat_edges::1.0": 2,
+        "object_merge": 2,
+        "copytopoints::2.0": 2,
+        "fuse::2.0": 2,
+        "subnet": 2,
+        "labs::edgegroup_to_curve::1.0": 2,
+        "sweep::2.0": 2,
+        "uvproject": 2,
+        "uvflatten::3.0": 2,
+        "ray": 2,
+        "split": 2,
+        "convertline": 2,
+        "attribute": 2,
+        "Tutorial_Building_Generator": 1,
+        "labs::building_from_patterns::1.1": 1,
+        "boolean::2.0": 1,
+        "facet": 1,
+        "polyexpand2d": 1,
+        "polybevel::3.0": 1,
+        "enumerate": 1,
+        "grouppromote": 1,
+        "polyframe": 1,
+        "polyextrude::2.0": 1,
+        "attribcopy": 1,
+        "attribfrompieces": 1,
+        "add": 1,
+        "resample": 1,
+        "delete": 1,
+        "divide": 1,
+        "grouptransfer": 1,
+        "subdivide": 1,
+        "labs::split_prim_by_normal::1.0": 1
+      },
+      "interface_parameter_count": 6,
+      "interface_examples": [
+        {
+          "name": "floor1",
+          "label": "type",
+          "type": "String"
+        },
+        {
+          "name": "repeat1",
+          "label": "repeat",
+          "type": "Toggle"
+        },
+        {
+          "name": "mesh_DT",
+          "label": "Per Mesh Data Table",
+          "type": "String"
+        },
+        {
+          "name": "Floor_DT",
+          "label": "Per Floor Data Table",
+          "type": "String"
+        },
+        {
+          "name": "input",
+          "label": "enable roof",
+          "type": "Toggle"
+        },
+        {
+          "name": "sx",
+          "label": "Scale UV",
+          "type": "Float"
+        }
+      ],
+      "labs_node_types_observed": [
+        "labs::building_from_patterns::1.1",
+        "labs::building_generator_utility::2.0",
+        "labs::dissolve_flat_edges::1.0",
+        "labs::edgegroup_to_curve::1.0",
+        "labs::instance_attributes::1.0",
+        "labs::split_prim_by_normal::1.0"
+      ],
+      "author_notes_bounded_500_chars": [
+        "Pattern logic <> = repeat [] = Do-once",
+        "Making a base roof shape",
+        "Based on the input different types of logic can be applied by switching",
+        "Clean up the input shape. In some cases more clean up might be needed.",
+        "Loading the data tables and extract the info to building pieces. PLEASE watch tutorial to see how data tables are used. This is specific to the data table structure",
+        "The core of the building tool. Using the Labs building from patterns."
+      ],
+      "output_node_locations": [
+        "MODEL_A/output0",
+        "FLOOR_Base/output0",
+        "MODEL_B/output0",
+        "FLOOR_Base1/output0",
+        "output0",
+        "building_generator_utility1/output0",
+        "building_generator_utility2/output0",
+        "Make_base_roof/output0",
+        "Style__/output0"
+      ],
+      "attribute_references_not_cooked_schema": [
+        "instancepath",
+        "unreal_data_table_1_Model",
+        "unreal_data_table_1_Name",
+        "unreal_data_table_2_Name",
+        "unreal_data_table_2_Pattern",
+        "unreal_data_table_3_Height",
+        "unreal_data_table_3_Size",
+        "unreal_instance",
+        "unreal_material"
+      ],
+      "code_parameter_locations": [],
+      "initialization_cook_nodes": [
+        {
+          "node": "Model_example1",
+          "type": "stash",
+          "count": 1
+        },
+        {
+          "node": "Model_example2",
+          "type": "stash",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

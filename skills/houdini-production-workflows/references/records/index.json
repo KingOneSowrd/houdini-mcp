@@ -44,11 +44,25 @@
       "path": "records/cases/project-titan-surface-growth.json"
     },
     {
+      "id": "titan-evo-hda-design-reference",
+      "record_type": "case",
+      "status": "candidate",
+      "workflow": "",
+      "path": "records/cases/titan-evo-hda-design-reference.json"
+    },
+    {
       "id": "exp-hair-tangent-baker-2-11-success",
       "record_type": "experience",
       "status": "candidate",
       "workflow": "hda-authoring",
       "path": "records/experiences/exp-hair-tangent-baker-2-11-success.json"
+    },
+    {
+      "id": "exp-titan-evo-hda-reference-intake",
+      "record_type": "experience",
+      "status": "candidate",
+      "workflow": "hda-authoring",
+      "path": "records/experiences/exp-titan-evo-hda-reference-intake.json"
     },
     {
       "id": "curve-instancing-v1",

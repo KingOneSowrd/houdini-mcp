@@ -11,6 +11,13 @@ embedded Python modules, native artist controls, SOP computation, and explicit
 bake/export actions formed a reusable HDA. It supports the candidate
 `hda-authoring-v1` recipe; it is one project, not independent cross-project proof.
 
+[Titan EVO](../cases/titan-evo.md) adds a user-designated authority reference:
+18 HDA definitions inspected as one related collection. Consult its asset
+inventory for curve sag/collision controls, DataTable module selection, stable
+local transforms, foliage controls, and simulation frame selection. This is
+structural evidence with pending target-version and engine acceptance; it does
+not promote the recipe or establish a new execution of it.
+
 ## Decision guidance
 
 - Assess native nodes and reasonable node combinations in the target version.
@@ -36,6 +43,15 @@ bake/export actions formed a reusable HDA. It supports the candidate
   valid result on failure. Keep base input and result paths separate.
 - Bind each report to its tested version and inputs. A historical success is
   evidence for that scope, not proof that the current release or engine passed.
+- For interactive tools, evaluate whether curve deformation and collision
+  post-processing meet the intended look before choosing a solver. Titan EVO's
+  Cable documents this tradeoff; its collision thickness limits still apply.
+- Separate DataTable field mapping, stable local transforms, module selection
+  and project asset-path resolution. Keep these conventions explicit rather
+  than copying Titan-specific paths or assuming all table schemas match.
+- Inspect actual attribute schema and selected values at stage boundaries.
+  Declarations in VEX/parameters are hypotheses until a bounded Cook confirms
+  them. A TimeShift is frame selection, not a persistent cache.
 
 ## Acceptance
 

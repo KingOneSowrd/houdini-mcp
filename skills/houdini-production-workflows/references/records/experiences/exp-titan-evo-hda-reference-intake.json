@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "record_type": "experience",
+  "id": "exp-titan-evo-hda-reference-intake",
+  "status": "candidate",
+  "workflow": "hda-authoring",
+  "goal": "整理 Titan EVO HDA 权威参考，形成有源码定位与环境边界的可复用设计经验",
+  "created_at": "2026-11-05T08:49:04Z",
+  "environment": {
+    "houdini": "21.0.440 (isolated structural inspection); package target 22 untested",
+    "sidefx_labs": "Installed 21.0 dependencies used for inspection; package exact version unspecified",
+    "engine": "Package README target Unreal 5.8; no engine session tested",
+    "project": "project-titan-evo",
+    "hip": ""
+  },
+  "inputs": [
+    "18 HDA libraries in Titan_EVO_UE_Project_and_HDAs/otls/",
+    "Package README and installer source (installer not executed)",
+    "User designation: 权威案例，可以加入经验中"
+  ],
+  "decisions": [
+    "Source authority and local acceptance maturity are separate; keep candidate and acceptance.verified=false.",
+    "Prefer artist-meaningful controls and reproducible contracts over implementation-language quotas.",
+    "Consider curve deformation plus collision post-processing before requiring simulation when it meets interactive goals; preserve Cable collision limitations.",
+    "Separate DataTable column mapping, stable local transform, module selection and asset-path resolution, following Scaffold structure.",
+    "Confirm actual attributes at preparation, orientation, merge/cleanup and engine-output boundaries using bounded MCP snapshots; code mentions alone do not prove output schema.",
+    "Treat TimeShift as frame selection; require a separate persistence/reopen check for simulation reproducibility.",
+    "Treat hard-coded material/mesh paths, table fields, pattern ordering and Cd channels as project/version contracts.",
+    "Retain old Titan cases; related editions and 18 assets do not multiply independent acceptance evidence.",
+    "This is a curated source-inspection experience, not an original production run or execution of hda-authoring-v1."
+  ],
+  "operations": [],
+  "corrections": [],
+  "outputs": [
+    "references/cases/titan-evo.md",
+    "references/cases/titan-evo/asset-inventory.json",
+    "case:titan-evo-hda-design-reference"
+  ],
+  "acceptance": {
+    "passed": [
+      "Read 18 HDA libraries containing 18 SOP definitions in isolated Hython.",
+      "Captured source fingerprints and confirmed all 18 post-inspection library hashes unchanged.",
+      "Reviewed artist interfaces, internal node structure, author annotations and code/parameter attribute references.",
+      "Recorded 4 initialization Cook counts explicitly instead of claiming zero Cook."
+    ],
+    "failed": [],
+    "skipped": [
+      "No functional geometry or parameter-response run.",
+      "No Houdini 22 / UE 5.8 / target Houdini Engine compatibility acceptance.",
+      "No simulation, bake, export, save/reopen or engine visual acceptance.",
+      "Upstream download authenticity and redistribution license not independently verified."
+    ],
+    "metrics": {
+      "evidence_mode": "curated_structural_inspection",
+      "outcome": "reference_intake_not_production_acceptance",
+      "hda_libraries": "18",
+      "hda_definitions": "18",
+      "expanded_node_count": "4469",
+      "initialization_cook_count_sum": "4",
+      "independent_source_collections": "1",
+      "recipe_execution": "none",
+      "evidence_ref": "case:titan-evo-hda-design-reference"
+    }
+  },
+  "provenance": {
+    "recipe_id": "",
+    "case_ids": [
+      "titan-evo-hda-design-reference"
+    ],
+    "created_by": "Agent reference curation; operations intentionally empty because this is not the original production operation journal",
+    "supersedes": ""
+  },
+  "tags": [
+    "titan-evo",
+    "authority-reference",
+    "structural-review",
+    "hda",
+    "datatable",
+    "candidate-generalization"
+  ]
+}

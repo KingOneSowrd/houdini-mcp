@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "record_type": "case",
+  "id": "titan-evo-hda-design-reference",
+  "title": "Titan EVO — 18 个 HDA 的权威参考案例集",
+  "status": "candidate",
+  "summary": "用户指定的权威参考；包内自述 SideFX learning demo。隔离 Hython 结构审阅 18 个 SOP HDA，提炼艺术控制、曲线下垂/碰撞后处理、DataTable 模块选择、局部坐标和引擎属性边界；尚未进行目标版本或引擎功能验收。",
+  "source": {
+    "kind": "mixed",
+    "locator": "Titan_EVO_UE_Project_and_HDAs/otls/",
+    "fingerprint": "sha256:70188195c8c70a273af9ecedafebde2db5bfe60407d01f05cfa9718a5f1fa9ed",
+    "notes": "Relative to the user-supplied project collection. Fingerprint hashes the sorted relative-path/SHA256 mapping in references/cases/titan-evo/asset-inventory.json using compact sorted-key UTF-8 JSON. User-designated authority; package README self-identifies SideFX learning demo, upstream provenance not independently authenticated. Related to older Titan material; not independent production acceptance."
+  },
+  "environment": {
+    "houdini_versions": [
+      "21.0.440 (structural inspection only)",
+      "22 (package README target; not tested)"
+    ],
+    "sidefx_labs_versions": [
+      "21.0 runtime (inspection dependencies; individual node types in inventory)",
+      "Package requires SideFX Labs; version unspecified"
+    ],
+    "engines": [
+      "Unreal Engine 5.8 (package README target; not tested)"
+    ],
+    "license_modes": [
+      "Not a delivery or license compatibility acceptance"
+    ]
+  },
+  "scope": {
+    "workflows": [
+      "hda-authoring",
+      "curve-instancing",
+      "modular-generation",
+      "surface-growth",
+      "vellum-settle",
+      "rbd-destruction"
+    ],
+    "domains": [
+      "sop",
+      "hda",
+      "game-engine",
+      "modular",
+      "foliage",
+      "vellum",
+      "rbd"
+    ],
+    "projects": [
+      "project-titan-evo"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "Guide curves / footprints / surfaces",
+      "domain": "Sop",
+      "contract": "Asset-specific input counts and semantic requirements in inventory; target-version functionality pending."
+    },
+    {
+      "name": "Module data and engine content",
+      "domain": "data",
+      "contract": "Project-specific Unreal DataTables, mesh/material references and units; validate actual field schema and missing/empty entries."
+    }
+  ],
+  "observations": {
+    "node_count": 4469,
+    "node_type_counts": {
+      "attribwrangle": 495,
+      "switch": 315,
+      "null": 304,
+      "merge": 211,
+      "xform": 127,
+      "groupcreate": 115,
+      "blast": 113,
+      "attribpromote": 111,
+      "attribdelete": 93,
+      "output": 89,
+      "object_merge": 85,
+      "block_begin": 85,
+      "parameter": 81,
+      "switchif": 81,
+      "attribcreate::2.0": 75,
+      "polyextrude::2.0": 72,
+      "resample": 61,
+      "copytopoints::2.0": 56,
+      "block_end": 53,
+      "normal": 47,
+      "subnet": 45,
+      "timeshift": 44,
+      "compile_begin": 43,
+      "dopimport": 42,
+      "split": 41,
+      "color": 39,
+      "sweep::2.0": 39,
+      "convertline": 38,
+      "add": 35,
+      "fuse::2.0": 33,
+      "tube": 33,
+      "box": 32,
+      "polybevel::3.0": 31,
+      "attribcopy": 29,
+      "connectivity": 29,
+      "grid": 26,
+      "matchsize": 26,
+      "grouprange": 25,
+      "copyxform": 25,
+      "uvedit": 25,
+      "delete": 24,
+      "compile_end": 23,
+      "polyframe": 22,
+      "stash": 22,
+      "attribtransfer": 22,
+      "labs::instance_attributes::1.0": 22,
+      "groupdelete": 21,
+      "clean": 20,
+      "ray": 20,
+      "assemble": 19,
+      "labs::autouv": 19,
+      "uvtransform::2.0": 18,
+      "sort": 17,
+      "polypath": 17,
+      "bound": 17,
+      "enablesolver": 16,
+      "attribrandomize": 16,
+      "splitpoints": 16,
+      "edit": 16,
+      "error": 16,
+      "attribnoise::2.0": 15,
+      "unpack": 14,
+      "divide": 14,
+      "xformbyattrib": 13,
+      "name": 13,
+      "bind": 12,
+      "sphere": 12,
+      "grouppromote": 12,
+      "carve": 12,
+      "attribexpression": 12,
+      "enumerate": 11,
+      "line": 11,
+      "facet": 11,
+      "sopsolver::2.0": 10,
+      "attribute": 10,
+      "invoke": 10,
+      "circle": 10,
+      "boolean::2.0": 10,
+      "uvlayout::3.0": 10,
+      "connectadjacentpieces": 9,
+      "dopnet": 9,
+      "scatter::2.0": 9,
+      "groupcombine": 9,
+      "orientalongcurve": 9,
+      "geometrywrangle": 8,
+      "sopgeo": 8,
+      "attribcast": 8,
+      "grouptransfer": 8,
+      "smooth::2.0": 8,
+      "reverse": 8,
+      "uvflatten::3.0": 8,
+      "suboutput": 7,
+      "subinput": 7,
+      "findshortestpath": 7,
+      "pack": 7,
+      "labs::split_prim_by_normal": 7,
+      "labs::edgegroup_to_curve::1.0": 7,
+      "dopimport::2.0": 6,
+      "xformpieces": 6,
+      "measure::2.0": 6
+    },
+    "top_nodes": [
+      "otls/annam.ivy.1.0.hda:annam::ivy::1.0",
+      "otls/annam.shrub.1.0.hda:annam::shrub::1.0",
+      "otls/Billboard_Generator.hda:Billboard_Generator",
+      "otls/electric_cable_tool_v1.hda:electric_cable_tool_v1",
+      "otls/electric_pole.hda:electric_pole",
+      "otls/sop_titan_simple_crates.1.0.hda:titatn_simple_crates::1.0",
+      "otls/sop_tut_pipe_greeble-1.0.hda:tut_pipe_greeble::1.0",
+      "otls/Titan_Cable_tool.hda:Titan::cable::1.0",
+      "otls/Titan_Cloth_tool.hda:Titan_Cloth_tool",
+      "otls/Titan_Constructions.hda:Titan_Constructions",
+      "otls/Titan_Fence_Tool.hda:Titan_Fence_Tool",
+      "otls/Titan_Pipes_Curves.hda:Titan_Pipes_Curves",
+      "otls/Titan_Platforms.hda:Titan_Platforms",
+      "otls/Titan_Scaffold.hda:Titan::scaffold::1.0",
+      "otls/Titan_SkyTrain.hda:Titan_SkyTrain",
+      "otls/Titan_StackingTool.hda:stackingTool",
+      "otls/Titan_Train_rails.hda:Titan_Train_rails",
+      "otls/Tutorial_Building_Generator.hda:Tutorial_Building_Generator"
+    ],
+    "external_references": [
+      "SideFX Labs node definitions listed per asset in inventory",
+      "Houdini Engine for Unreal Engine",
+      "Project-scoped /Game/Titan, Megascans and other mesh/material paths",
+      "Asset-specific DataTable schemas and example object references"
+    ],
+    "sticky_notes": [],
+    "stages": [
+      "Semantic input and artist controls",
+      "Curve or local-coordinate preparation",
+      "Module/foliage selection and optional simulation",
+      "Attribute cleanup and engine contracts",
+      "Explicit publication and independent target acceptance"
+    ],
+    "contracts": [
+      "Cable: global_gravity/sub_wire_gravity and bounded collision controls; post-process collision per author notes",
+      "Scaffold: DataTable columns, xform/P_local, iteration and unreal_instance selection",
+      "Fence/Rail: resampling, orientation, length classes and explicit instance sources",
+      "Foliage: documented asset-specific Cd channels and separate artistic seed controls",
+      "Simulation: Reset/Frame controls and TimeShift; no persistent-cache claim",
+      "MCP checkpoints: confirm cooked schema and selected values before/after destructive attribute stages"
+    ],
+    "limitations": [
+      "18 related assets form one reference collection, not 18 independent successful deliveries.",
+      "4469 includes root HDA nodes and installed expanded builtin/Labs children; per-asset type maps capped at 100.",
+      "Manual metadata inspection did not explicitly request geometry cooking; initialization observed 4 single cooks (3 stash, 1 timeshift), detailed in inventory.",
+      "All 18 library hashes unchanged after inspection; no production-scene mutation, source save, simulation request, package install, cache or export.",
+      "Package declares Houdini 22 / UE 5.8; inspection in 21.0.440 does not prove target-version compatibility.",
+      "Attribute names from code/parameters are references, not cooked attribute owner/type/value evidence.",
+      "No geometry, parameter-response, runtime-performance or engine acceptance.",
+      "No upstream source authenticity or redistribution-license certification; binaries not copied."
+    ]
+  },
+  "outputs": [
+    {
+      "product": "Reusable HDA design reference",
+      "path_contract": "18 original libraries remain in source collection; see relative inventory",
+      "attributes": []
+    },
+    {
+      "product": "Traceable collection intake evidence",
+      "path_contract": "references/cases/titan-evo/asset-inventory.json and references/cases/titan-evo.md",
+      "attributes": []
+    }
+  ],
+  "acceptance": {
+    "verified": false,
+    "checks": [
+      "Resolve actual target Houdini/Engine/Labs versions and dependencies",
+      "Validate DataTable fields, dimensions, empty choices and project paths",
+      "Run bounded geometry and parameter-response checks with before/after attribute snapshots",
+      "Verify collision boundaries, length threshold equality and material channel contracts",
+      "Verify persistent simulation result and fresh reopen when required",
+      "Perform independent Unreal import and visual acceptance"
+    ],
+    "evidence": [
+      "references/cases/titan-evo/asset-inventory.json: 18 definition inventories, source hashes, initialization-cook scope",
+      "references/cases/titan-evo.md: Agent-curated decisions and limitations",
+      "Source README and installer reviewed without execution; fingerprints in inventory",
+      "All 18 post-inspection library SHA256 values match intake preflight"
+    ]
+  },
+  "provenance": {
+    "created_at": "2026-11-05T08:49:04Z",
+    "created_by": "Agent review of user-designated authority reference; isolated Hython structure inspection, no functional acceptance",
+    "supersedes": ""
+  },
+  "tags": [
+    "titan-evo",
+    "authority-reference",
+    "structural-review",
+    "hda",
+    "datatable",
+    "artist-controls",
+    "unreal",
+    "related-corpus"
+  ]
+}
